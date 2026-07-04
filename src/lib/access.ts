@@ -1,6 +1,7 @@
 import type { ApprovedEmail, Gallery } from "./types";
 
 export type AccessFailureReason =
+  | "gallery-inactive"
   | "expired"
   | "incorrect-passcode"
   | "email-required"
@@ -12,7 +13,15 @@ export function canListGallery(gallery: Gallery): boolean {
   return gallery.isListed && gallery.status === "active";
 }
 
-export function isGalleryExpired(gallery: Gallery, today = new Date().toISOString().slice(0, 10)): boolean {
+export function getLocalDateString(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+export function isGalleryExpired(gallery: Gallery, today = getLocalDateString()): boolean {
   if (!gallery.expirationDate) {
     return false;
   }
@@ -45,6 +54,10 @@ export function validateGalleryAccess({
   email?: string;
   today?: string;
 }): AccessResult {
+  if (gallery.status !== "active") {
+    return { ok: false, reason: "gallery-inactive" };
+  }
+
   if (isGalleryExpired(gallery, today)) {
     return { ok: false, reason: "expired" };
   }
