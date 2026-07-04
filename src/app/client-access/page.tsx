@@ -7,10 +7,10 @@ export default function ClientAccessPage() {
       <SiteHeader />
       <main className="page-shell narrow-page">
         <p className="eyebrow">Client Access</p>
-        <h1>Client access is coming soon.</h1>
+        <h1>Private galleries are almost ready.</h1>
         <p className="lede">
-          This prototype placeholder keeps the public navigation live while the private gallery flow will be built in a
-          later task.
+          Client previews and downloads will open here soon, with a quiet space for viewing, selecting, and saving
+          finished photographs.
         </p>
       </main>
     </>

@@ -7,7 +7,7 @@ describe("ContactPage", () => {
   it("renders the prototype placeholder", () => {
     render(<ContactPage />);
 
-    expect(screen.getByRole("heading", { name: "Contact form is coming soon." })).toBeInTheDocument();
-    expect(screen.getByText(/inquiry flow will be built in a later task/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Booking inquiries are almost ready." })).toBeInTheDocument();
+    expect(screen.getByText(/session requests and notes will open here soon/i)).toBeInTheDocument();
   });
 });

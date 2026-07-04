@@ -7,7 +7,7 @@ describe("ClientAccessPage", () => {
   it("renders the prototype placeholder", () => {
     render(<ClientAccessPage />);
 
-    expect(screen.getByRole("heading", { name: "Client access is coming soon." })).toBeInTheDocument();
-    expect(screen.getByText(/private gallery flow will be built in a later task/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Private galleries are almost ready." })).toBeInTheDocument();
+    expect(screen.getByText(/client previews and downloads will open here soon/i)).toBeInTheDocument();
   });
 });
