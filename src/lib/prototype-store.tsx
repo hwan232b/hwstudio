@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useReducer } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { promoteGalleryPhoto } from "./portfolio";
 import { moveItemById } from "./reorder";
 import { initialState } from "./seed-data";
@@ -24,6 +24,7 @@ type PrototypeAction =
   | { type: "portfolio-photo:remove"; photoId: string }
   | { type: "portfolio-category:move"; categoryId: string; direction: "up" | "down" }
   | { type: "inquiry:add"; inquiry: ContactInquiry }
+  | { type: "hydrate"; state: PrototypeState }
   | { type: "reset" };
 
 const storageKey = "hwstudio-prototype-state";
@@ -90,6 +91,8 @@ function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState
         ...state,
         contactInquiries: [action.inquiry, ...state.contactInquiries]
       };
+    case "hydrate":
+      return action.state;
     case "reset":
       return initialState;
     default:
@@ -97,20 +100,43 @@ function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState
   }
 }
 
-function loadInitialState(): PrototypeState {
-  if (typeof window === "undefined") {
-    return initialState;
+function isPrototypeState(value: unknown): value is PrototypeState {
+  if (!value || typeof value !== "object") {
+    return false;
   }
 
-  const stored = window.localStorage.getItem(storageKey);
+  const candidate = value as Partial<Record<keyof PrototypeState, unknown>>;
+  return (
+    Array.isArray(candidate.galleries) &&
+    Array.isArray(candidate.galleryPhotos) &&
+    Array.isArray(candidate.approvedEmails) &&
+    Array.isArray(candidate.portfolioCategories) &&
+    Array.isArray(candidate.portfolioPhotos) &&
+    Array.isArray(candidate.contactInquiries)
+  );
+}
+
+function loadStoredState(): PrototypeState | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  let stored: string | null;
+  try {
+    stored = window.localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+
   if (!stored) {
-    return initialState;
+    return null;
   }
 
   try {
-    return JSON.parse(stored) as PrototypeState;
+    const parsed = JSON.parse(stored);
+    return isPrototypeState(parsed) ? parsed : null;
   } catch {
-    return initialState;
+    return null;
   }
 }
 
@@ -120,11 +146,28 @@ const PrototypeStoreContext = createContext<{
 } | null>(null);
 
 export function PrototypeStoreProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState, loadInitialState);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const [hasLoadedStoredState, setHasLoadedStoredState] = useState(false);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(state));
-  }, [state]);
+    const storedState = loadStoredState();
+    if (storedState) {
+      dispatch({ type: "hydrate", state: storedState });
+    }
+    setHasLoadedStoredState(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedStoredState) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(state));
+    } catch {
+      return;
+    }
+  }, [hasLoadedStoredState, state]);
 
   const value = useMemo(() => ({ state, dispatch }), [state]);
   return <PrototypeStoreContext.Provider value={value}>{children}</PrototypeStoreContext.Provider>;
