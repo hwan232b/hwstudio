@@ -53,6 +53,27 @@ describe("portfolio helpers", () => {
     });
   });
 
+  it("copies category ids when promoting a gallery photo", () => {
+    const categoryIds = ["featured"];
+
+    const result = promoteGalleryPhoto(existing, galleryPhoto, categoryIds);
+    categoryIds.push("hidden");
+
+    expect(result[1]?.categoryIds).toEqual(["featured"]);
+  });
+
+  it("does not promote an ineligible gallery photo", () => {
+    const result = promoteGalleryPhoto(existing, { ...galleryPhoto, isPortfolioEligible: false }, ["featured"]);
+
+    expect(result).toEqual(existing);
+  });
+
+  it("marks promoted photos as featured for the featured category", () => {
+    const result = promoteGalleryPhoto(existing, galleryPhoto, ["cat-featured"]);
+
+    expect(result[1]?.isFeatured).toBe(true);
+  });
+
   it("does not duplicate an already promoted gallery photo", () => {
     const result = promoteGalleryPhoto(existing, { ...galleryPhoto, id: "photo-1" }, ["featured"]);
     expect(result).toEqual(existing);

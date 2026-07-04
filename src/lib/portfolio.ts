@@ -33,7 +33,7 @@ export function promoteGalleryPhoto(
       sourceGalleryPhotoId: galleryPhoto.id,
       previewUrl: galleryPhoto.previewUrl,
       alt: galleryPhoto.alt,
-      categoryIds,
+      categoryIds: [...categoryIds],
       displayOrder: nextDisplayOrder,
       isFeatured: categoryIds.includes("cat-featured")
     }

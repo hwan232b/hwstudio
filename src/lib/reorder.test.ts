@@ -31,6 +31,32 @@ describe("reorder helpers", () => {
     expect(moveItemById(items, "a", "up")).toEqual(items);
   });
 
+  it("returns normalized items when the id is unknown", () => {
+    const items: Item[] = [
+      { id: "b", displayOrder: 20, label: "B" },
+      { id: "a", displayOrder: 10, label: "A" }
+    ];
+
+    expect(moveItemById(items, "missing", "up")).toEqual([
+      { id: "a", displayOrder: 1, label: "A" },
+      { id: "b", displayOrder: 2, label: "B" }
+    ]);
+  });
+
+  it("does not mutate the original input array", () => {
+    const items: Item[] = [
+      { id: "a", displayOrder: 1, label: "A" },
+      { id: "b", displayOrder: 2, label: "B" }
+    ];
+
+    moveItemById(items, "a", "down");
+
+    expect(items).toEqual([
+      { id: "a", displayOrder: 1, label: "A" },
+      { id: "b", displayOrder: 2, label: "B" }
+    ]);
+  });
+
   it("normalizes arbitrary display order values", () => {
     const items: Item[] = [
       { id: "b", displayOrder: 20, label: "B" },
