@@ -29,9 +29,10 @@ const approvedEmails: ApprovedEmail[] = [
 ];
 
 describe("gallery access logic", () => {
-  it("lists only galleries marked as listed", () => {
+  it("lists only galleries marked as listed and active", () => {
     expect(canListGallery(activeGallery)).toBe(true);
     expect(canListGallery({ ...activeGallery, isListed: false })).toBe(false);
+    expect(canListGallery({ ...activeGallery, status: "draft" })).toBe(false);
   });
 
   it("detects expired galleries by date", () => {
