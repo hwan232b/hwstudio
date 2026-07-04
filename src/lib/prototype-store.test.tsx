@@ -104,6 +104,90 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText("Spring Graduation Preview")).toBeInTheDocument();
   });
 
+  it("falls back to seed state when a persisted gallery photo has a non-number display order", () => {
+    window.localStorage.setItem(
+      "hwstudio-prototype-state",
+      JSON.stringify({
+        ...initialState,
+        galleryPhotos: [{ ...initialState.galleryPhotos[0], displayOrder: "bad" }]
+      })
+    );
+
+    function GalleryPhotoValidationProbe() {
+      const { state } = usePrototypeStore();
+      const displayOrder = state.galleryPhotos[0]?.displayOrder;
+      return <p>{typeof displayOrder === "number" ? `order:${displayOrder}` : "invalid order"}</p>;
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <GalleryPhotoValidationProbe />
+      </PrototypeStoreProvider>
+    );
+
+    expect(screen.getByText("order:1")).toBeInTheDocument();
+  });
+
+  it("falls back to seed state when a persisted portfolio photo has non-array category ids", () => {
+    window.localStorage.setItem(
+      "hwstudio-prototype-state",
+      JSON.stringify({
+        ...initialState,
+        portfolioPhotos: [{ ...initialState.portfolioPhotos[0], categoryIds: "bad" }]
+      })
+    );
+
+    function PortfolioPhotoValidationProbe() {
+      const { state } = usePrototypeStore();
+      const categoryIds = state.portfolioPhotos[0]?.categoryIds;
+      return <p>{Array.isArray(categoryIds) ? categoryIds.join(",") : "invalid category ids"}</p>;
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <PortfolioPhotoValidationProbe />
+      </PrototypeStoreProvider>
+    );
+
+    expect(screen.getByText("cat-featured,cat-graduation")).toBeInTheDocument();
+  });
+
+  it("removes portfolio photos sourced from a removed gallery photo and can reset the store", () => {
+    function PhotoRemovalProbe() {
+      const { state, dispatch } = usePrototypeStore();
+      const galleryPhotoCount = state.galleryPhotos.length;
+      const portfolioPhotoCount = state.portfolioPhotos.length;
+      return (
+        <div>
+          <p>{`gallery:${galleryPhotoCount};portfolio:${portfolioPhotoCount}`}</p>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "gallery-photo:remove", photoId: "gallery-photo-1" })}
+          >
+            Remove source photo
+          </button>
+          <button type="button" onClick={() => dispatch({ type: "reset" })}>
+            Reset
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <PhotoRemovalProbe />
+      </PrototypeStoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove source photo" }));
+
+    expect(screen.getByText("gallery:2;portfolio:0")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(screen.getByText("gallery:3;portfolio:1")).toBeInTheDocument();
+  });
+
   it("does not crash provider updates when storage writes fail", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("Storage unavailable");

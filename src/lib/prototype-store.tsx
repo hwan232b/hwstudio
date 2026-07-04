@@ -9,6 +9,7 @@ import type {
   ContactInquiry,
   Gallery,
   GalleryPhoto,
+  PortfolioPhoto,
   PortfolioCategory,
   PrototypeState
 } from "./types";
@@ -28,6 +29,8 @@ type PrototypeAction =
   | { type: "reset" };
 
 const storageKey = "hwstudio-prototype-state";
+const galleryStatuses = ["active", "draft", "archived"] as const;
+const inquiryStatuses = ["new", "reviewed", "archived"] as const;
 
 function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState {
   switch (action.type) {
@@ -100,19 +103,146 @@ function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState
   }
 }
 
-function isPrototypeState(value: unknown): value is PrototypeState {
-  if (!value || typeof value !== "object") {
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return value === null || isString(value);
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(isString);
+}
+
+function hasStringFields(candidate: UnknownRecord, fields: string[]) {
+  return fields.every((field) => isString(candidate[field]));
+}
+
+function isGalleryStatus(value: unknown): value is Gallery["status"] {
+  return isString(value) && galleryStatuses.includes(value as Gallery["status"]);
+}
+
+function isInquiryStatus(value: unknown): value is ContactInquiry["status"] {
+  return isString(value) && inquiryStatuses.includes(value as ContactInquiry["status"]);
+}
+
+function isArrayOf<T>(value: unknown, guard: (item: unknown) => item is T): value is T[] {
+  return Array.isArray(value) && value.every(guard);
+}
+
+function isGallery(value: unknown): value is Gallery {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const candidate = value as Partial<Record<keyof PrototypeState, unknown>>;
   return (
-    Array.isArray(candidate.galleries) &&
-    Array.isArray(candidate.galleryPhotos) &&
-    Array.isArray(candidate.approvedEmails) &&
-    Array.isArray(candidate.portfolioCategories) &&
-    Array.isArray(candidate.portfolioPhotos) &&
-    Array.isArray(candidate.contactInquiries)
+    hasStringFields(value, [
+      "id",
+      "title",
+      "slug",
+      "eventDate",
+      "description",
+      "coverPhotoId",
+      "passcode",
+      "driveFolderId",
+      "fullDownloadUrl"
+    ]) &&
+    isBoolean(value.isListed) &&
+    isNumber(value.displayOrder) &&
+    isBoolean(value.requiresApprovedEmail) &&
+    isNullableString(value.expirationDate) &&
+    isGalleryStatus(value.status)
+  );
+}
+
+function isGalleryPhoto(value: unknown): value is GalleryPhoto {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    hasStringFields(value, ["id", "galleryId", "driveFileId", "previewUrl", "downloadUrl", "alt"]) &&
+    isNumber(value.displayOrder) &&
+    isBoolean(value.isVisible) &&
+    isBoolean(value.isPortfolioEligible)
+  );
+}
+
+function isApprovedEmail(value: unknown): value is ApprovedEmail {
+  return isRecord(value) && hasStringFields(value, ["id", "galleryId", "email", "label"]);
+}
+
+function isPortfolioCategory(value: unknown): value is PortfolioCategory {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    hasStringFields(value, ["id", "name", "slug", "description"]) &&
+    isNumber(value.displayOrder) &&
+    isBoolean(value.isVisible)
+  );
+}
+
+function isPortfolioPhoto(value: unknown): value is PortfolioPhoto {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    hasStringFields(value, ["id", "previewUrl", "alt"]) &&
+    isNullableString(value.sourceGalleryPhotoId) &&
+    isStringArray(value.categoryIds) &&
+    isNumber(value.displayOrder) &&
+    isBoolean(value.isFeatured)
+  );
+}
+
+function isContactInquiry(value: unknown): value is ContactInquiry {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    hasStringFields(value, [
+      "id",
+      "name",
+      "email",
+      "message",
+      "photographyType",
+      "preferredDate",
+      "createdAt"
+    ]) && isInquiryStatus(value.status)
+  );
+}
+
+function isPrototypeState(value: unknown): value is PrototypeState {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    isArrayOf(value.galleries, isGallery) &&
+    isArrayOf(value.galleryPhotos, isGalleryPhoto) &&
+    isArrayOf(value.approvedEmails, isApprovedEmail) &&
+    isArrayOf(value.portfolioCategories, isPortfolioCategory) &&
+    isArrayOf(value.portfolioPhotos, isPortfolioPhoto) &&
+    isArrayOf(value.contactInquiries, isContactInquiry)
   );
 }
 
