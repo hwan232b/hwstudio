@@ -17,7 +17,10 @@ export function promoteGalleryPhoto(
   galleryPhoto: GalleryPhoto,
   categoryIds: string[]
 ): PortfolioPhoto[] {
-  const alreadyPromoted = currentPhotos.some((photo) => photo.sourceGalleryPhotoId === galleryPhoto.id);
+  const portfolioPhotoId = `portfolio-${galleryPhoto.id}`;
+  const alreadyPromoted = currentPhotos.some(
+    (photo) => photo.sourceGalleryPhotoId === galleryPhoto.id || photo.id === portfolioPhotoId
+  );
 
   if (alreadyPromoted || !galleryPhoto.isPortfolioEligible) {
     return currentPhotos;
@@ -29,7 +32,7 @@ export function promoteGalleryPhoto(
   return [
     ...currentPhotos,
     {
-      id: `portfolio-${galleryPhoto.id}`,
+      id: portfolioPhotoId,
       sourceGalleryPhotoId: galleryPhoto.id,
       previewUrl: galleryPhoto.previewUrl,
       alt: galleryPhoto.alt,
