@@ -4,13 +4,15 @@ import { describe, expect, it } from "vitest";
 import HomePage from "./page";
 
 describe("HomePage", () => {
-  it("renders the temporary homepage heading", () => {
+  it("renders the public homepage shell", () => {
     render(<HomePage />);
 
     expect(
       screen.getByRole("heading", {
-        name: "Editorial photography for milestones, portraits, and gatherings."
+        name: "A curated gallery for every milestone."
       })
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "HWStudio home" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore Portfolio" })).toBeInTheDocument();
   });
 });
