@@ -36,7 +36,11 @@ describe("GalleryAccessForm", () => {
   it("shows access errors", () => {
     render(<GalleryAccessForm gallery={gallery} error="That email is not approved for this gallery." onSubmit={vi.fn()} />);
 
-    expect(screen.getByText("That email is not approved for this gallery.")).toBeInTheDocument();
+    const error = screen.getByRole("alert");
+
+    expect(error).toHaveTextContent("That email is not approved for this gallery.");
+    expect(screen.getByLabelText("Passcode")).toHaveAttribute("aria-describedby", error.id);
+    expect(screen.getByLabelText("Approved email")).toHaveAttribute("aria-invalid", "true");
   });
 
   it("hides the approved email field when the gallery does not require it", () => {

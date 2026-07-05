@@ -17,6 +17,7 @@ type GalleryAccessFormProps = {
 export function GalleryAccessForm({ gallery, error, onSubmit }: GalleryAccessFormProps) {
   const [passcode, setPasscode] = useState("");
   const [email, setEmail] = useState("");
+  const errorId = "gallery-access-error";
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,6 +33,8 @@ export function GalleryAccessForm({ gallery, error, onSubmit }: GalleryAccessFor
           name="passcode"
           value={passcode}
           autoComplete="current-password"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
           onChange={(event) => setPasscode(event.target.value)}
         />
       </label>
@@ -43,11 +46,17 @@ export function GalleryAccessForm({ gallery, error, onSubmit }: GalleryAccessFor
             name="email"
             value={email}
             autoComplete="email"
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? errorId : undefined}
             onChange={(event) => setEmail(event.target.value)}
           />
         </label>
       ) : null}
-      {error ? <p className="form-error">{error}</p> : null}
+      {error ? (
+        <p className="form-error" id={errorId} role="alert">
+          {error}
+        </p>
+      ) : null}
       <button className="dark-button" type="submit">
         Open Gallery
       </button>
