@@ -1,15 +1,14 @@
 "use client";
 
 import React from "react";
+import { AdminShell } from "@/components/AdminShell";
 import { usePrototypeStore } from "@/lib/prototype-store";
 
 export default function AdminInquiriesPage() {
   const { state } = usePrototypeStore();
 
   return (
-    <main className="page-shell admin-inquiries-shell">
-      <p className="eyebrow">Admin</p>
-      <h1>Inquiries</h1>
+    <AdminShell title="Inquiries">
       {state.contactInquiries.length > 0 ? (
         <div className="inquiry-list">
           {state.contactInquiries.map((inquiry) => (
@@ -44,6 +43,6 @@ export default function AdminInquiriesPage() {
           <p>No inquiries have been submitted yet.</p>
         </section>
       )}
-    </main>
+    </AdminShell>
   );
 }
