@@ -32,6 +32,7 @@ describe("AdminSettingsPage", () => {
     await screen.findByText("Changed Gallery");
     fireEvent.click(screen.getByRole("button", { name: "Reset prototype data" }));
 
+    expect(screen.getByRole("status")).toHaveTextContent("Prototype data reset.");
     await waitFor(() => {
       expect(screen.getByText("Spring Graduation Preview")).toBeInTheDocument();
     });

@@ -94,6 +94,31 @@ h1 {
   font-size: 0.9rem;
 }
 
+.site-nav a,
+.admin-nav a,
+.brand-mark,
+.admin-brand {
+  cursor: pointer;
+  transition: color 140ms ease, text-decoration-color 140ms ease, transform 120ms ease;
+}
+
+.site-nav a:hover,
+.admin-nav a:hover,
+.brand-mark:hover,
+.admin-brand:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
+
+.site-nav a:active,
+.admin-nav a:active,
+.brand-mark:active,
+.admin-brand:active {
+  transform: translateY(1px);
+}
+
 .home-shell {
   padding-top: 16px;
 }
@@ -129,11 +154,35 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .dark-button {
   background: var(--color-ink);
   color: var(--color-surface);
+}
+
+.text-button:hover {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 2px 0 var(--color-line);
+  transform: translateY(-1px);
+}
+
+.dark-button:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 0 var(--color-line);
+  transform: translateY(-1px);
+}
+
+.text-button:active,
+.dark-button:active {
+  box-shadow: none;
+  transform: translateY(1px);
 }
 
 .mosaic-grid {
@@ -419,6 +468,16 @@ h1 {
 
 .admin-title-block {
   padding-top: 28px;
+}
+
+.admin-status {
+  margin: 24px 0 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .admin-stat-grid {
@@ -745,10 +804,21 @@ h1 {
   background: transparent;
   cursor: pointer;
   overflow: hidden;
+  transition: border-color 140ms ease, opacity 140ms ease, transform 120ms ease;
 }
 
 .photo-button[aria-pressed="true"] {
   border-color: var(--color-ink);
+}
+
+.photo-button:hover {
+  border-color: var(--color-accent);
+  opacity: 0.86;
+  transform: translateY(-1px);
+}
+
+.photo-button:active {
+  transform: translateY(1px);
 }
 
 .photo-button img {

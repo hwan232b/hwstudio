@@ -91,6 +91,7 @@ describe("AdminPortfolioPage", () => {
     const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
     fireEvent.click(within(featuredCategory).getByRole("button", { name: "Move Featured down" }));
 
+    expect(screen.getByRole("status")).toHaveTextContent("Portfolio category moved.");
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
       expect(stored.portfolioCategories).toEqual([
@@ -108,6 +109,7 @@ describe("AdminPortfolioPage", () => {
     });
     fireEvent.click(within(featuredPhoto).getByRole("button", { name: "Remove Graduation portrait with warm light" }));
 
+    expect(screen.getByRole("status")).toHaveTextContent("Portfolio photo removed.");
     await waitFor(() => {
       expect(screen.queryByAltText("Graduation portrait with warm light")).not.toBeInTheDocument();
       const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;

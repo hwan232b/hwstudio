@@ -25,6 +25,7 @@ describe("AdminGalleryPage", () => {
     fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "summer-gallery" } });
     fireEvent.click(screen.getByRole("button", { name: "Save gallery" }));
 
+    expect(await screen.findByRole("status")).toHaveTextContent("Gallery saved.");
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
       expect(stored.galleries[0]).toMatchObject({
@@ -44,11 +45,13 @@ describe("AdminGalleryPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add email" }));
 
     expect(await screen.findByText("new-client@example.com")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Email added.");
 
     const emailRow = screen.getByText("new-client@example.com").closest("li");
     expect(emailRow).not.toBeNull();
     fireEvent.click(within(emailRow as HTMLElement).getByRole("button", { name: "Remove email" }));
 
+    expect(screen.getByRole("status")).toHaveTextContent("Email removed.");
     await waitFor(() => {
       expect(screen.queryByText("new-client@example.com")).not.toBeInTheDocument();
     });
@@ -68,6 +71,7 @@ describe("AdminGalleryPage", () => {
 
     fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Move up" }));
 
+    expect(screen.getByRole("status")).toHaveTextContent("Photo moved up.");
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
       expect(
@@ -90,11 +94,13 @@ describe("AdminGalleryPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
 
     const photo = await screen.findByAltText("Gallery photo 4");
+    expect(screen.getByRole("status")).toHaveTextContent("Photo added.");
     const photoRow = photo.closest("li");
     expect(photoRow).not.toBeNull();
 
     fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Promote to featured" }));
 
+    expect(screen.getByRole("status")).toHaveTextContent("Photo promoted to portfolio.");
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
       const promotedSource = stored.galleryPhotos.find(
@@ -109,6 +115,7 @@ describe("AdminGalleryPage", () => {
 
     fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Remove photo" }));
 
+    expect(screen.getByRole("status")).toHaveTextContent("Photo removed.");
     await waitFor(() => {
       expect(screen.queryByAltText("Gallery photo 4")).not.toBeInTheDocument();
     });

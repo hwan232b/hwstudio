@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
 import { usePrototypeStore } from "@/lib/prototype-store";
 
 export default function AdminPortfolioPage() {
   const { state, dispatch } = usePrototypeStore();
+  const [statusMessage, setStatusMessage] = useState("");
   const categories = useMemo(
     () => [...state.portfolioCategories].sort((first, second) => first.displayOrder - second.displayOrder),
     [state.portfolioCategories]
@@ -17,6 +18,11 @@ export default function AdminPortfolioPage() {
 
   return (
     <AdminShell title="Portfolio">
+      {statusMessage ? (
+        <p className="admin-status" role="status">
+          {statusMessage}
+        </p>
+      ) : null}
       <div className="admin-editor-grid">
         <section className="admin-panel">
           <h2>Categories</h2>
@@ -30,9 +36,10 @@ export default function AdminPortfolioPage() {
                       className="text-button"
                       type="button"
                       aria-label={`Move ${category.name} up`}
-                      onClick={() =>
-                        dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "up" })
-                      }
+                      onClick={() => {
+                        dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "up" });
+                        setStatusMessage("Portfolio category moved.");
+                      }}
                     >
                       Move up
                     </button>
@@ -40,9 +47,10 @@ export default function AdminPortfolioPage() {
                       className="text-button"
                       type="button"
                       aria-label={`Move ${category.name} down`}
-                      onClick={() =>
-                        dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "down" })
-                      }
+                      onClick={() => {
+                        dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "down" });
+                        setStatusMessage("Portfolio category moved.");
+                      }}
                     >
                       Move down
                     </button>
@@ -71,7 +79,10 @@ export default function AdminPortfolioPage() {
                       className="text-button"
                       type="button"
                       aria-label={`Remove ${photo.alt}`}
-                      onClick={() => dispatch({ type: "portfolio-photo:remove", photoId: photo.id })}
+                      onClick={() => {
+                        dispatch({ type: "portfolio-photo:remove", photoId: photo.id });
+                        setStatusMessage("Portfolio photo removed.");
+                      }}
                     >
                       Remove photo
                     </button>

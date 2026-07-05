@@ -38,6 +38,7 @@ export default function AdminGalleryPage() {
   const [values, setValues] = useState<GalleryFormValues | null>(gallery ? getGalleryFormValues(gallery) : null);
   const [email, setEmail] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
     if (gallery) {
@@ -77,6 +78,7 @@ export default function AdminGalleryPage() {
         expirationDate: values.expirationDate?.trim() ? values.expirationDate : null
       }
     });
+    setStatusMessage("Gallery saved.");
   }
 
   function addApprovedEmail(event: React.FormEvent<HTMLFormElement>) {
@@ -96,6 +98,7 @@ export default function AdminGalleryPage() {
       }
     });
     setEmail("");
+    setStatusMessage("Email added.");
   }
 
   function addPhoto(event: React.FormEvent<HTMLFormElement>) {
@@ -122,6 +125,7 @@ export default function AdminGalleryPage() {
       }
     });
     setPhotoUrl("");
+    setStatusMessage("Photo added.");
   }
 
   if (!gallery || !values) {
@@ -136,6 +140,11 @@ export default function AdminGalleryPage() {
 
   return (
     <AdminShell title="Gallery">
+      {statusMessage ? (
+        <p className="admin-status" role="status">
+          {statusMessage}
+        </p>
+      ) : null}
       <div className="admin-editor-grid">
         <form className="admin-panel admin-form" onSubmit={saveGallery}>
           <h2>Gallery details</h2>
@@ -227,7 +236,10 @@ export default function AdminGalleryPage() {
                 <button
                   className="text-button"
                   type="button"
-                  onClick={() => dispatch({ type: "approved-email:remove", emailId: approvedEmail.id })}
+                  onClick={() => {
+                    dispatch({ type: "approved-email:remove", emailId: approvedEmail.id });
+                    setStatusMessage("Email removed.");
+                  }}
                 >
                   Remove email
                 </button>
@@ -267,30 +279,40 @@ export default function AdminGalleryPage() {
                 <button
                   className="text-button"
                   type="button"
-                  onClick={() => dispatch({ type: "gallery-photo:move", photoId: photo.id, direction: "up" })}
+                  onClick={() => {
+                    dispatch({ type: "gallery-photo:move", photoId: photo.id, direction: "up" });
+                    setStatusMessage("Photo moved up.");
+                  }}
                 >
                   Move up
                 </button>
                 <button
                   className="text-button"
                   type="button"
-                  onClick={() => dispatch({ type: "gallery-photo:move", photoId: photo.id, direction: "down" })}
+                  onClick={() => {
+                    dispatch({ type: "gallery-photo:move", photoId: photo.id, direction: "down" });
+                    setStatusMessage("Photo moved down.");
+                  }}
                 >
                   Move down
                 </button>
                 <button
                   className="text-button"
                   type="button"
-                  onClick={() =>
-                    dispatch({ type: "portfolio:promote-gallery-photo", photoId: photo.id, categoryIds: ["cat-featured"] })
-                  }
+                  onClick={() => {
+                    dispatch({ type: "portfolio:promote-gallery-photo", photoId: photo.id, categoryIds: ["cat-featured"] });
+                    setStatusMessage("Photo promoted to portfolio.");
+                  }}
                 >
                   Promote to featured
                 </button>
                 <button
                   className="text-button"
                   type="button"
-                  onClick={() => dispatch({ type: "gallery-photo:remove", photoId: photo.id })}
+                  onClick={() => {
+                    dispatch({ type: "gallery-photo:remove", photoId: photo.id });
+                    setStatusMessage("Photo removed.");
+                  }}
                 >
                   Remove photo
                 </button>
