@@ -36,6 +36,7 @@ type PrototypeAction =
 const storageKey = "hwstudio-prototype-state";
 const galleryStatuses = ["active", "draft", "archived"] as const;
 const inquiryStatuses = ["new", "reviewed", "archived"] as const;
+const retiredPortfolioCategoryIds = ["cat-featured"];
 
 function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState {
   switch (action.type) {
@@ -293,13 +294,36 @@ function normalizeStoredDrivePreviews(state: PrototypeState): PrototypeState {
 }
 
 function migrateStoredState(value: unknown): unknown {
-  if (!isRecord(value) || "portfolioSettings" in value) {
+  if (!isRecord(value)) {
     return value;
   }
 
+  const nextValue = "portfolioSettings" in value ? value : { ...value, portfolioSettings: initialState.portfolioSettings };
+  if (!isRecord(nextValue)) {
+    return nextValue;
+  }
+
   return {
-    ...value,
-    portfolioSettings: initialState.portfolioSettings
+    ...nextValue,
+    portfolioCategories: Array.isArray(nextValue.portfolioCategories)
+      ? nextValue.portfolioCategories.filter(
+          (category) => !isRecord(category) || !retiredPortfolioCategoryIds.includes(String(category.id))
+        )
+      : nextValue.portfolioCategories,
+    portfolioPhotos: Array.isArray(nextValue.portfolioPhotos)
+      ? nextValue.portfolioPhotos.map((photo) => {
+          if (!isRecord(photo) || !Array.isArray(photo.categoryIds)) {
+            return photo;
+          }
+
+          return {
+            ...photo,
+            categoryIds: photo.categoryIds.filter(
+              (categoryId) => typeof categoryId === "string" && !retiredPortfolioCategoryIds.includes(categoryId)
+            )
+          };
+        })
+      : nextValue.portfolioPhotos
   };
 }
 

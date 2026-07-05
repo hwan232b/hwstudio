@@ -306,11 +306,15 @@ export default function AdminGalleryPage() {
                   className="text-button"
                   type="button"
                   onClick={() => {
-                    dispatch({ type: "portfolio:promote-gallery-photo", photoId: photo.id, categoryIds: ["cat-featured"] });
+                    dispatch({
+                      type: "portfolio:promote-gallery-photo",
+                      photoId: photo.id,
+                      categoryIds: ["cat-graduation"]
+                    });
                     setStatusMessage("Photo promoted to portfolio.");
                   }}
                 >
-                  Promote to featured
+                  Promote to graduation
                 </button>
                 <button
                   className="text-button"

@@ -144,7 +144,7 @@ describe("AdminGalleryPage", () => {
     const photoRow = photo.closest("li");
     expect(photoRow).not.toBeNull();
 
-    fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Promote to featured" }));
+    fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Promote to graduation" }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Photo promoted to portfolio.");
     await waitFor(() => {

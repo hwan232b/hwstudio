@@ -67,6 +67,59 @@ h1 {
   font-size: clamp(2.4rem, 6vw, 4.4rem);
 }
 
+.portfolio-category-grid {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.portfolio-category-card {
+  margin: 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  background: rgba(255, 253, 249, 0.52);
+}
+
+.portfolio-category-card a {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 18px;
+}
+
+.portfolio-category-card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+  background: var(--color-line);
+}
+
+.portfolio-category-card h2 {
+  margin: 0;
+  padding: 0 16px;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.portfolio-category-card p {
+  margin: 0;
+  padding: 0 16px;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.portfolio-category-card a:hover h2 {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
+
+.portfolio-back-link {
+  margin-bottom: 24px;
+}
+
 .lede {
   max-width: 680px;
   margin: 24px 0 0;

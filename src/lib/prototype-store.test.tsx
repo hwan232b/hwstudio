@@ -17,7 +17,7 @@ function PromotePhotoProbe() {
           dispatch({
             type: "portfolio:promote-gallery-photo",
             photoId: "gallery-photo-2",
-            categoryIds: ["cat-featured", "cat-graduation"]
+            categoryIds: ["cat-graduation"]
           })
         }
       >
@@ -45,7 +45,7 @@ describe("PrototypeStoreProvider", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Promote" }));
 
-    expect(screen.getByText("cat-featured,cat-graduation")).toBeInTheDocument();
+    expect(screen.getByText("cat-graduation")).toBeInTheDocument();
   });
 
   it("renders seed state first before hydrating persisted state", () => {
@@ -149,17 +149,53 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText(initialState.portfolioSettings.heading)).toBeInTheDocument();
   });
 
+  it("removes retired featured portfolio category from persisted state", () => {
+    window.localStorage.setItem(
+      "hwstudio-prototype-state",
+      JSON.stringify({
+        ...initialState,
+        portfolioCategories: [
+          { id: "cat-featured", name: "Featured", slug: "featured", description: "Old featured edit.", displayOrder: 1, isVisible: true },
+          ...initialState.portfolioCategories
+        ],
+        portfolioPhotos: [
+          {
+            ...initialState.portfolioPhotos[0],
+            categoryIds: ["cat-featured", "cat-graduation"]
+          }
+        ]
+      })
+    );
+
+    function RetiredCategoryProbe() {
+      const { state } = usePrototypeStore();
+      return (
+        <div>
+          <p>{state.portfolioCategories.map((category) => category.id).join(",")}</p>
+          <p>{state.portfolioPhotos[0]?.categoryIds.join(",")}</p>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <RetiredCategoryProbe />
+      </PrototypeStoreProvider>
+    );
+
+    expect(screen.queryByText(/cat-featured/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("cat-graduation")).toHaveLength(1);
+  });
+
   it("updates portfolio settings and categories through the store", () => {
     function PortfolioUpdateProbe() {
       const { state, dispatch } = usePrototypeStore();
-      const featuredCategory = state.portfolioCategories.find((item) => item.id === "cat-featured");
       const category = state.portfolioCategories.find((item) => item.id === "cat-graduation");
 
       return (
         <div>
           <p>{state.portfolioSettings.eyebrow}</p>
           <p>{state.portfolioSettings.heading}</p>
-          <p>{featuredCategory?.name}</p>
           <p>{category?.name}</p>
           <p>{category?.description}</p>
           <button
@@ -182,7 +218,7 @@ describe("PrototypeStoreProvider", () => {
               dispatch({
                 type: "portfolio-category:update",
                 category: {
-                  ...initialState.portfolioCategories[1],
+                  ...initialState.portfolioCategories[0],
                   name: "Senior stories",
                   description: "Graduation sessions with campus context."
                 }
@@ -208,7 +244,6 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText("A tighter edit for launch.")).toBeInTheDocument();
     expect(screen.getByText("Senior stories")).toBeInTheDocument();
     expect(screen.getByText("Graduation sessions with campus context.")).toBeInTheDocument();
-    expect(screen.getByText("Featured")).toBeInTheDocument();
   });
 
   it("adds a direct portfolio photo through the store", () => {
@@ -229,9 +264,9 @@ describe("PrototypeStoreProvider", () => {
                   sourceGalleryPhotoId: null,
                   previewUrl: "https://example.com/direct.jpg",
                   alt: "Direct portfolio photo",
-                  categoryIds: ["cat-featured"],
+                  categoryIds: ["cat-graduation"],
                   displayOrder: 2,
-                  isFeatured: true
+                  isFeatured: false
                 }
               })
             }
@@ -348,7 +383,7 @@ describe("PrototypeStoreProvider", () => {
       </PrototypeStoreProvider>
     );
 
-    expect(screen.getByText("cat-featured,cat-graduation")).toBeInTheDocument();
+    expect(screen.getByText("cat-graduation")).toBeInTheDocument();
   });
 
   it("removes portfolio photos sourced from a removed gallery photo and can reset the store", () => {

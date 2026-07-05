@@ -21,10 +21,10 @@ const portfolioState: PrototypeState = {
       isVisible: true
     },
     {
-      id: "cat-featured",
-      name: "Featured",
-      slug: "featured",
-      description: "A curated first look.",
+      id: "cat-graduation",
+      name: "Graduation",
+      slug: "graduation",
+      description: "Milestone sessions and campus stories.",
       displayOrder: 1,
       isVisible: true
     }
@@ -44,13 +44,13 @@ const portfolioState: PrototypeState = {
       isFeatured: false
     },
     {
-      id: "portfolio-photo-featured",
+      id: "portfolio-photo-graduation",
       sourceGalleryPhotoId: null,
-      previewUrl: "https://example.com/featured.jpg",
+      previewUrl: "https://example.com/graduation.jpg",
       alt: "Graduation portrait with warm light",
-      categoryIds: ["cat-featured"],
+      categoryIds: ["cat-graduation"],
       displayOrder: 1,
-      isFeatured: true
+      isFeatured: false
     }
   ],
   contactInquiries: []
@@ -76,7 +76,7 @@ describe("AdminPortfolioPage", () => {
 
     const categories = await screen.findAllByRole("listitem", { name: /category:/i });
     expect(categories).toHaveLength(2);
-    expect(categories[0]).toHaveAccessibleName("Category: Featured");
+    expect(categories[0]).toHaveAccessibleName("Category: Graduation");
     expect(categories[1]).toHaveAccessibleName("Category: Portraits");
 
     const photos = screen.getAllByRole("listitem", { name: /portfolio photo:/i });
@@ -85,22 +85,22 @@ describe("AdminPortfolioPage", () => {
     expect(photos[1]).toHaveAccessibleName("Portfolio photo: Editorial portrait in a studio");
     expect(within(photos[0]).getByAltText("Graduation portrait with warm light")).toHaveAttribute(
       "src",
-      "https://example.com/featured.jpg"
+      "https://example.com/graduation.jpg"
     );
   });
 
   it("moves portfolio categories through the prototype store", async () => {
     renderAdminPortfolioPage();
 
-    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
-    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Move Featured down" }));
+    const graduationCategory = await screen.findByRole("listitem", { name: "Category: Graduation" });
+    fireEvent.click(within(graduationCategory).getByRole("button", { name: "Move Graduation down" }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Portfolio category moved.");
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
       expect(stored.portfolioCategories).toEqual([
         expect.objectContaining({ id: "cat-portraits", displayOrder: 1 }),
-        expect.objectContaining({ id: "cat-featured", displayOrder: 2 })
+        expect.objectContaining({ id: "cat-graduation", displayOrder: 2 })
       ]);
     });
   });
@@ -108,21 +108,21 @@ describe("AdminPortfolioPage", () => {
   it("preserves unsaved category section drafts while moving categories", async () => {
     renderAdminPortfolioPage();
 
-    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
-    fireEvent.change(within(featuredCategory).getByLabelText("Section name"), {
+    const graduationCategory = await screen.findByRole("listitem", { name: "Category: Graduation" });
+    fireEvent.change(within(graduationCategory).getByLabelText("Section name"), {
       target: { value: "Draft Highlights" }
     });
-    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Move Featured down" }));
+    fireEvent.click(within(graduationCategory).getByRole("button", { name: "Move Graduation down" }));
 
-    const movedFeaturedCategory = screen.getByRole("listitem", { name: "Category: Featured" });
-    expect(within(movedFeaturedCategory).getByLabelText("Section name")).toHaveValue("Draft Highlights");
+    const movedGraduationCategory = screen.getByRole("listitem", { name: "Category: Graduation" });
+    expect(within(movedGraduationCategory).getByLabelText("Section name")).toHaveValue("Draft Highlights");
   });
 
   it("hydrates category section fields from persisted state", async () => {
     renderAdminPortfolioPage({
       ...portfolioState,
       portfolioCategories: portfolioState.portfolioCategories.map((category) =>
-        category.id === "cat-featured"
+        category.id === "cat-graduation"
           ? {
               ...category,
               name: "Persisted Highlights",
@@ -133,10 +133,10 @@ describe("AdminPortfolioPage", () => {
       )
     });
 
-    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Persisted Highlights" });
-    expect(within(featuredCategory).getByLabelText("Section name")).toHaveValue("Persisted Highlights");
-    expect(within(featuredCategory).getByLabelText("Section description")).toHaveValue("Persisted featured copy.");
-    expect(within(featuredCategory).getByLabelText("Visible on portfolio")).not.toBeChecked();
+    const graduationCategory = await screen.findByRole("listitem", { name: "Category: Persisted Highlights" });
+    expect(within(graduationCategory).getByLabelText("Section name")).toHaveValue("Persisted Highlights");
+    expect(within(graduationCategory).getByLabelText("Section description")).toHaveValue("Persisted featured copy.");
+    expect(within(graduationCategory).getByLabelText("Visible on portfolio")).not.toBeChecked();
   });
 
   it("saves portfolio intro copy and category details", async () => {
@@ -152,15 +152,15 @@ describe("AdminPortfolioPage", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("Portfolio intro saved.");
 
-    const featuredCategory = screen.getByRole("listitem", { name: "Category: Featured" });
-    fireEvent.change(within(featuredCategory).getByLabelText("Section name"), {
-      target: { value: "Featured moments" }
+    const graduationCategory = screen.getByRole("listitem", { name: "Category: Graduation" });
+    fireEvent.change(within(graduationCategory).getByLabelText("Section name"), {
+      target: { value: "Graduation moments" }
     });
-    fireEvent.change(within(featuredCategory).getByLabelText("Section description"), {
+    fireEvent.change(within(graduationCategory).getByLabelText("Section description"), {
       target: { value: "A lead selection of portfolio images." }
     });
-    fireEvent.click(within(featuredCategory).getByLabelText("Visible on portfolio"));
-    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Save section" }));
+    fireEvent.click(within(graduationCategory).getByLabelText("Visible on portfolio"));
+    fireEvent.click(within(graduationCategory).getByRole("button", { name: "Save section" }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Portfolio section saved.");
     await waitFor(() => {
@@ -172,8 +172,8 @@ describe("AdminPortfolioPage", () => {
       expect(stored.portfolioCategories).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            id: "cat-featured",
-            name: "Featured moments",
+            id: "cat-graduation",
+            name: "Graduation moments",
             description: "A lead selection of portfolio images.",
             isVisible: false
           })
@@ -185,27 +185,27 @@ describe("AdminPortfolioPage", () => {
   it("adds Google Drive portfolio photo to a section", async () => {
     renderAdminPortfolioPage();
 
-    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
-    fireEvent.change(within(featuredCategory).getByLabelText("Photo URL"), {
+    const graduationCategory = await screen.findByRole("listitem", { name: "Category: Graduation" });
+    fireEvent.change(within(graduationCategory).getByLabelText("Photo URL"), {
       target: { value: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing" }
     });
-    fireEvent.change(within(featuredCategory).getByLabelText("Alt text"), {
-      target: { value: "Featured senior portrait" }
+    fireEvent.change(within(graduationCategory).getByLabelText("Alt text"), {
+      target: { value: "Graduation senior portrait" }
     });
-    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Add photo to Featured" }));
+    fireEvent.click(within(graduationCategory).getByRole("button", { name: "Add photo to Graduation" }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Portfolio photo added.");
-    expect(within(featuredCategory).getByAltText("Featured senior portrait")).toBeInTheDocument();
+    expect(within(graduationCategory).getByAltText("Graduation senior portrait")).toBeInTheDocument();
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
       expect(stored.portfolioPhotos).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             previewUrl: "https://lh3.googleusercontent.com/d/1abcDEFghiJKLmnop=w1600",
-            alt: "Featured senior portrait",
-            categoryIds: ["cat-featured"],
+            alt: "Graduation senior portrait",
+            categoryIds: ["cat-graduation"],
             displayOrder: 3,
-            isFeatured: true
+            isFeatured: false
           })
         ])
       );
@@ -215,14 +215,14 @@ describe("AdminPortfolioPage", () => {
   it("rejects Google Drive folder links for portfolio photos", async () => {
     renderAdminPortfolioPage();
 
-    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
-    fireEvent.change(within(featuredCategory).getByLabelText("Photo URL"), {
+    const graduationCategory = await screen.findByRole("listitem", { name: "Category: Graduation" });
+    fireEvent.change(within(graduationCategory).getByLabelText("Photo URL"), {
       target: { value: "https://drive.google.com/drive/folders/1folderId" }
     });
-    fireEvent.change(within(featuredCategory).getByLabelText("Alt text"), {
+    fireEvent.change(within(graduationCategory).getByLabelText("Alt text"), {
       target: { value: "Folder link" }
     });
-    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Add photo to Featured" }));
+    fireEvent.click(within(graduationCategory).getByRole("button", { name: "Add photo to Graduation" }));
 
     expect(screen.getByRole("status")).toHaveTextContent(
       "Folder links cannot preview a single photo yet. Paste an individual Google Drive file link."

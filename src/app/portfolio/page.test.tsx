@@ -18,11 +18,16 @@ describe("PortfolioPage", () => {
     window.localStorage.clear();
   });
 
-  it("skips visible categories without portfolio photos", () => {
+  it("shows visible portfolio categories as cover cards", () => {
     renderPortfolioPage();
 
-    expect(screen.getByRole("heading", { name: "Featured" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Graduation" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Featured" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open graduation portfolio/i })).toHaveAttribute(
+      "href",
+      "/portfolio/graduation"
+    );
+    expect(screen.getByRole("img", { name: "Graduation portrait with warm outdoor light" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Events" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Headshots" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Portraits" })).not.toBeInTheDocument();

@@ -67,22 +67,21 @@ export const initialState: PrototypeState = {
     heading: "Selected work across portraits, events, and graduation stories."
   },
   portfolioCategories: [
-    { id: "cat-featured", name: "Featured", slug: "featured", description: "A curated first look.", displayOrder: 1, isVisible: true },
-    { id: "cat-graduation", name: "Graduation", slug: "graduation", description: "Milestone sessions and campus stories.", displayOrder: 2, isVisible: true },
-    { id: "cat-events", name: "Events", slug: "events", description: "Gatherings, ceremonies, and celebrations.", displayOrder: 3, isVisible: true },
-    { id: "cat-headshots", name: "Headshots", slug: "headshots", description: "Clean portraits for professional use.", displayOrder: 4, isVisible: true },
-    { id: "cat-portraits", name: "Portraits", slug: "portraits", description: "Personal and editorial portrait work.", displayOrder: 5, isVisible: true },
-    { id: "cat-groups", name: "Groups", slug: "groups", description: "Friends, teams, and family groupings.", displayOrder: 6, isVisible: true }
+    { id: "cat-graduation", name: "Graduation", slug: "graduation", description: "Milestone sessions and campus stories.", displayOrder: 1, isVisible: true },
+    { id: "cat-events", name: "Events", slug: "events", description: "Gatherings, ceremonies, and celebrations.", displayOrder: 2, isVisible: true },
+    { id: "cat-headshots", name: "Headshots", slug: "headshots", description: "Clean portraits for professional use.", displayOrder: 3, isVisible: true },
+    { id: "cat-portraits", name: "Portraits", slug: "portraits", description: "Personal and editorial portrait work.", displayOrder: 4, isVisible: true },
+    { id: "cat-groups", name: "Groups", slug: "groups", description: "Friends, teams, and family groupings.", displayOrder: 5, isVisible: true }
   ],
   portfolioPhotos: [
     {
       id: "portfolio-photo-1",
       sourceGalleryPhotoId: "gallery-photo-1",
       previewUrl: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80",
-      alt: "Featured graduation portrait",
-      categoryIds: ["cat-featured", "cat-graduation"],
+      alt: "Graduation portrait with warm outdoor light",
+      categoryIds: ["cat-graduation"],
       displayOrder: 1,
-      isFeatured: true
+      isFeatured: false
     }
   ],
   contactInquiries: []

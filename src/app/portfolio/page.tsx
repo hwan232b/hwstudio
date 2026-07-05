@@ -2,7 +2,6 @@
 
 import React from "react";
 import { SiteHeader } from "@/components/SiteHeader";
-import { PhotoGrid } from "@/components/PhotoGrid";
 import { getVisibleCategories, getVisiblePortfolioPhotos } from "@/lib/portfolio";
 import { usePrototypeStore } from "@/lib/prototype-store";
 
@@ -11,9 +10,9 @@ export default function PortfolioPage() {
   const categories = getVisibleCategories(state.portfolioCategories)
     .map((category) => ({
       category,
-      photos: getVisiblePortfolioPhotos(state.portfolioPhotos, category.id)
+      coverPhoto: getVisiblePortfolioPhotos(state.portfolioPhotos, category.id)[0] ?? null
     }))
-    .filter(({ photos }) => photos.length > 0);
+    .filter(({ coverPhoto }) => coverPhoto);
 
   return (
     <>
@@ -22,15 +21,17 @@ export default function PortfolioPage() {
         <p className="eyebrow">{state.portfolioSettings.eyebrow}</p>
         <h1 className="portfolio-heading">{state.portfolioSettings.heading}</h1>
         {categories.length > 0 ? (
-          <div className="category-stack">
-            {categories.map(({ category, photos }) => (
-              <section key={category.id} className="portfolio-section">
-                <div className="section-heading">
-                  <h2>{category.name}</h2>
-                  <p>{category.description}</p>
-                </div>
-                <PhotoGrid photos={photos} />
-              </section>
+          <div className="portfolio-category-grid">
+            {categories.map(({ category, coverPhoto }) => (
+              <article key={category.id} className="portfolio-category-card">
+                <a href={`/portfolio/${category.slug}`} aria-label={`Open ${category.name} portfolio`}>
+                  {coverPhoto ? <img src={coverPhoto.previewUrl} alt={coverPhoto.alt} /> : null}
+                  <div>
+                    <h2>{category.name}</h2>
+                    <p>{category.description}</p>
+                  </div>
+                </a>
+              </article>
             ))}
           </div>
         ) : (
