@@ -21,6 +21,13 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
   const [isVisible, setIsVisible] = useState(category.isVisible);
   const [photoUrl, setPhotoUrl] = useState("");
   const [photoAlt, setPhotoAlt] = useState("");
+  const categoryPhotos = useMemo(
+    () =>
+      portfolioPhotos
+        .filter((photo) => photo.categoryIds.includes(category.id))
+        .sort((first, second) => first.displayOrder - second.displayOrder),
+    [category.id, portfolioPhotos]
+  );
   const lastSyncedContent = useRef<CategoryEditorContent>({
     id: category.id,
     name: category.name,
@@ -98,7 +105,7 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
   }
 
   return (
-    <li aria-label={`Category: ${category.name}`}>
+    <li className="portfolio-category-editor" aria-label={`Category: ${category.name}`}>
       <form className="admin-form" onSubmit={saveSection}>
         <label>
           Section name
@@ -116,7 +123,7 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
           Save section
         </button>
       </form>
-      <form className="admin-inline-form" onSubmit={addPhoto}>
+      <form className="admin-inline-form portfolio-section-photo-form" onSubmit={addPhoto}>
         <label>
           Photo URL
           <input
@@ -134,6 +141,18 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
           Add photo to {category.name}
         </button>
       </form>
+      {categoryPhotos.length > 0 ? (
+        <div className="portfolio-section-photo-preview" aria-label={`${category.name} portfolio photos`}>
+          {categoryPhotos.map((photo) => (
+            <figure key={photo.id}>
+              <img src={photo.previewUrl} alt={photo.alt} />
+              <figcaption>{photo.alt}</figcaption>
+            </figure>
+          ))}
+        </div>
+      ) : (
+        <p className="admin-empty portfolio-section-empty">No photos in this section yet.</p>
+      )}
       <div className="admin-photo-actions">
         <button
           className="text-button"

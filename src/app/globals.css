@@ -661,6 +661,50 @@ h1 {
   gap: 8px;
 }
 
+.admin-list li.portfolio-category-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.portfolio-section-photo-form {
+  grid-template-columns: minmax(0, 1fr);
+  padding-top: 14px;
+  border-top: 1px solid var(--color-line);
+}
+
+.portfolio-section-photo-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 10px;
+}
+
+.portfolio-section-photo-preview figure {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.portfolio-section-photo-preview img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  background: var(--color-line);
+}
+
+.portfolio-section-photo-preview figcaption {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.portfolio-section-empty {
+  margin-top: 0;
+  padding: 14px 0;
+}
+
 .admin-settings-panel {
   margin-top: 42px;
   display: flex;

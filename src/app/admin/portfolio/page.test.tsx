@@ -195,6 +195,7 @@ describe("AdminPortfolioPage", () => {
     fireEvent.click(within(featuredCategory).getByRole("button", { name: "Add photo to Featured" }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Portfolio photo added.");
+    expect(within(featuredCategory).getByAltText("Featured senior portrait")).toBeInTheDocument();
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
       expect(stored.portfolioPhotos).toEqual(
