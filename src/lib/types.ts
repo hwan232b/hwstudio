@@ -50,6 +50,24 @@ export type PortfolioSettings = {
   heading: string;
 };
 
+export type HomePhoto = {
+  id: string;
+  previewUrl: string;
+  alt: string;
+  displayOrder: number;
+};
+
+export type HomeSettings = {
+  eyebrow: string;
+  heading: string;
+  lede: string;
+  primaryCtaLabel: string;
+  primaryCtaHref: string;
+  secondaryCtaLabel: string;
+  secondaryCtaHref: string;
+  photos: HomePhoto[];
+};
+
 export type PortfolioPhoto = {
   id: string;
   sourceGalleryPhotoId: string | null;
@@ -75,6 +93,7 @@ export type PrototypeState = {
   galleries: Gallery[];
   galleryPhotos: GalleryPhoto[];
   approvedEmails: ApprovedEmail[];
+  homeSettings: HomeSettings;
   portfolioSettings: PortfolioSettings;
   portfolioCategories: PortfolioCategory[];
   portfolioPhotos: PortfolioPhoto[];

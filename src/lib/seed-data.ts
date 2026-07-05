@@ -62,6 +62,35 @@ export const initialState: PrototypeState = {
       label: "Sample client"
     }
   ],
+  homeSettings: {
+    eyebrow: "HWStudio",
+    heading: "A curated gallery for every milestone.",
+    lede: "Clean editorial photography for graduations, portraits, groups, events, and headshots.",
+    primaryCtaLabel: "Explore Portfolio",
+    primaryCtaHref: "/portfolio",
+    secondaryCtaLabel: "Access Your Photos",
+    secondaryCtaHref: "/client-access",
+    photos: [
+      {
+        id: "home-photo-1",
+        previewUrl: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80",
+        alt: "Graduation portrait session with warm outdoor light",
+        displayOrder: 1
+      },
+      {
+        id: "home-photo-2",
+        previewUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80",
+        alt: "Group of graduates walking through campus",
+        displayOrder: 2
+      },
+      {
+        id: "home-photo-3",
+        previewUrl: "https://images.unsplash.com/photo-1496317899792-9d7dbcd928a1?auto=format&fit=crop&w=1200&q=80",
+        alt: "Editorial portrait detail with soft neutral tones",
+        displayOrder: 3
+      }
+    ]
+  },
   portfolioSettings: {
     eyebrow: "Portfolio",
     heading: "Selected work across portraits, events, and graduation stories."

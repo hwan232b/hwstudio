@@ -640,6 +640,12 @@ h1 {
   min-height: 18px;
 }
 
+.admin-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .admin-inline-form {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
@@ -955,6 +961,7 @@ h1 {
 
   .admin-stat-grid,
   .admin-editor-grid,
+  .admin-two-column,
   .admin-inline-form,
   .admin-photo-list li,
   .admin-settings-panel {

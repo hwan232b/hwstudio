@@ -149,6 +149,86 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText(initialState.portfolioSettings.heading)).toBeInTheDocument();
   });
 
+  it("migrates older persisted state without homepage settings while preserving user data", () => {
+    const { homeSettings: _homeSettings, ...olderPersistedState } = {
+      ...initialState,
+      galleries: [
+        {
+          ...initialState.galleries[0],
+          title: "Homepage Migration Gallery"
+        },
+        ...initialState.galleries.slice(1)
+      ]
+    };
+    window.localStorage.setItem("hwstudio-prototype-state", JSON.stringify(olderPersistedState));
+
+    function HomepageSettingsMigrationProbe() {
+      const { state } = usePrototypeStore();
+      return (
+        <div>
+          <p>{state.galleries[0]?.title}</p>
+          <p>{state.homeSettings.heading}</p>
+          <p>{state.homeSettings.photos[0]?.alt}</p>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <HomepageSettingsMigrationProbe />
+      </PrototypeStoreProvider>
+    );
+
+    expect(screen.getByText("Homepage Migration Gallery")).toBeInTheDocument();
+    expect(screen.getByText(initialState.homeSettings.heading)).toBeInTheDocument();
+    expect(screen.getByText(initialState.homeSettings.photos[0]?.alt ?? "")).toBeInTheDocument();
+  });
+
+  it("updates homepage settings through the store", () => {
+    function HomepageUpdateProbe() {
+      const { state, dispatch } = usePrototypeStore();
+      return (
+        <div>
+          <p>{state.homeSettings.heading}</p>
+          <p>{state.homeSettings.photos.map((photo) => photo.alt).join(",")}</p>
+          <button
+            type="button"
+            onClick={() =>
+              dispatch({
+                type: "home-settings:update",
+                settings: {
+                  ...state.homeSettings,
+                  heading: "Updated homepage heading",
+                  photos: [
+                    {
+                      id: "home-photo-test",
+                      previewUrl: "https://example.com/home-test.jpg",
+                      alt: "Updated homepage photo",
+                      displayOrder: 1
+                    }
+                  ]
+                }
+              })
+            }
+          >
+            Update homepage
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <HomepageUpdateProbe />
+      </PrototypeStoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Update homepage" }));
+
+    expect(screen.getByText("Updated homepage heading")).toBeInTheDocument();
+    expect(screen.getByText("Updated homepage photo")).toBeInTheDocument();
+  });
+
   it("removes retired featured portfolio category from persisted state", () => {
     window.localStorage.setItem(
       "hwstudio-prototype-state",

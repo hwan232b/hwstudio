@@ -10,6 +10,8 @@ import type {
   ContactInquiry,
   Gallery,
   GalleryPhoto,
+  HomePhoto,
+  HomeSettings,
   PortfolioPhoto,
   PortfolioCategory,
   PortfolioSettings,
@@ -23,6 +25,7 @@ type PrototypeAction =
   | { type: "gallery-photo:move"; photoId: string; direction: "up" | "down" }
   | { type: "approved-email:add"; email: ApprovedEmail }
   | { type: "approved-email:remove"; emailId: string }
+  | { type: "home-settings:update"; settings: HomeSettings }
   | { type: "portfolio:promote-gallery-photo"; photoId: string; categoryIds: string[] }
   | { type: "portfolio-settings:update"; settings: PortfolioSettings }
   | { type: "portfolio-photo:add"; photo: PortfolioPhoto }
@@ -70,6 +73,11 @@ function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState
       return {
         ...state,
         approvedEmails: state.approvedEmails.filter((email) => email.id !== action.emailId)
+      };
+    case "home-settings:update":
+      return {
+        ...state,
+        homeSettings: action.settings
       };
     case "portfolio:promote-gallery-photo": {
       const galleryPhoto = state.galleryPhotos.find((photo) => photo.id === action.photoId);
@@ -226,6 +234,32 @@ function isPortfolioSettings(value: unknown): value is PortfolioSettings {
   return isRecord(value) && hasStringFields(value, ["eyebrow", "heading"]);
 }
 
+function isHomePhoto(value: unknown): value is HomePhoto {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return hasStringFields(value, ["id", "previewUrl", "alt"]) && isNumber(value.displayOrder);
+}
+
+function isHomeSettings(value: unknown): value is HomeSettings {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    hasStringFields(value, [
+      "eyebrow",
+      "heading",
+      "lede",
+      "primaryCtaLabel",
+      "primaryCtaHref",
+      "secondaryCtaLabel",
+      "secondaryCtaHref"
+    ]) && isArrayOf(value.photos, isHomePhoto)
+  );
+}
+
 function isPortfolioPhoto(value: unknown): value is PortfolioPhoto {
   if (!isRecord(value)) {
     return false;
@@ -267,6 +301,7 @@ function isPrototypeState(value: unknown): value is PrototypeState {
     isArrayOf(value.galleries, isGallery) &&
     isArrayOf(value.galleryPhotos, isGalleryPhoto) &&
     isArrayOf(value.approvedEmails, isApprovedEmail) &&
+    isHomeSettings(value.homeSettings) &&
     isPortfolioSettings(value.portfolioSettings) &&
     isArrayOf(value.portfolioCategories, isPortfolioCategory) &&
     isArrayOf(value.portfolioPhotos, isPortfolioPhoto) &&
@@ -277,6 +312,20 @@ function isPrototypeState(value: unknown): value is PrototypeState {
 function normalizeStoredDrivePreviews(state: PrototypeState): PrototypeState {
   return {
     ...state,
+    homeSettings: {
+      ...state.homeSettings,
+      photos: state.homeSettings.photos.map((photo) => {
+        const normalizedPhoto = normalizePhotoUrl(photo.previewUrl);
+        if (!normalizedPhoto.driveFileId) {
+          return photo;
+        }
+
+        return {
+          ...photo,
+          previewUrl: normalizedPhoto.previewUrl
+        };
+      })
+    },
     galleryPhotos: state.galleryPhotos.map((photo) => {
       const normalizedPhoto = normalizePhotoUrl(photo.downloadUrl);
       if (!normalizedPhoto.driveFileId) {
@@ -298,7 +347,12 @@ function migrateStoredState(value: unknown): unknown {
     return value;
   }
 
-  const nextValue = "portfolioSettings" in value ? value : { ...value, portfolioSettings: initialState.portfolioSettings };
+  const valueWithHomeSettings =
+    "homeSettings" in value ? value : { ...value, homeSettings: initialState.homeSettings };
+  const nextValue =
+    "portfolioSettings" in valueWithHomeSettings
+      ? valueWithHomeSettings
+      : { ...valueWithHomeSettings, portfolioSettings: initialState.portfolioSettings };
   if (!isRecord(nextValue)) {
     return nextValue;
   }
