@@ -29,6 +29,7 @@ export default function AdminPortfolioPage() {
                     <button
                       className="text-button"
                       type="button"
+                      aria-label={`Move ${category.name} up`}
                       onClick={() =>
                         dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "up" })
                       }
@@ -38,6 +39,7 @@ export default function AdminPortfolioPage() {
                     <button
                       className="text-button"
                       type="button"
+                      aria-label={`Move ${category.name} down`}
                       onClick={() =>
                         dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "down" })
                       }
@@ -68,6 +70,7 @@ export default function AdminPortfolioPage() {
                     <button
                       className="text-button"
                       type="button"
+                      aria-label={`Remove ${photo.alt}`}
                       onClick={() => dispatch({ type: "portfolio-photo:remove", photoId: photo.id })}
                     >
                       Remove photo

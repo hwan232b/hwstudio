@@ -89,7 +89,7 @@ describe("AdminPortfolioPage", () => {
     renderAdminPortfolioPage();
 
     const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
-    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Move down" }));
+    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Move Featured down" }));
 
     await waitFor(() => {
       const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
@@ -106,7 +106,7 @@ describe("AdminPortfolioPage", () => {
     const featuredPhoto = await screen.findByRole("listitem", {
       name: "Portfolio photo: Graduation portrait with warm light"
     });
-    fireEvent.click(within(featuredPhoto).getByRole("button", { name: "Remove photo" }));
+    fireEvent.click(within(featuredPhoto).getByRole("button", { name: "Remove Graduation portrait with warm light" }));
 
     await waitFor(() => {
       expect(screen.queryByAltText("Graduation portrait with warm light")).not.toBeInTheDocument();
