@@ -26,9 +26,12 @@ describe("AdminGalleryPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save gallery" }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Title")).toHaveValue("Summer Gallery");
+      const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
+      expect(stored.galleries[0]).toMatchObject({
+        title: "Summer Gallery",
+        slug: "summer-gallery"
+      });
     });
-    expect(screen.getByLabelText("Slug")).toHaveValue("summer-gallery");
   });
 
   it("adds and removes approved emails", async () => {
@@ -51,7 +54,7 @@ describe("AdminGalleryPage", () => {
     });
   });
 
-  it("adds, reorders, promotes, and removes gallery photos", async () => {
+  it("adds and reorders gallery photos", async () => {
     renderAdminGalleryPage();
 
     fireEvent.change(await screen.findByLabelText("Add photo URL"), {
@@ -64,7 +67,46 @@ describe("AdminGalleryPage", () => {
     expect(photoRow).not.toBeNull();
 
     fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Move up" }));
+
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
+      expect(
+        stored.galleryPhotos.find(
+          (item: { previewUrl: string }) => item.previewUrl === "https://example.com/new-photo.jpg"
+        )
+      ).toMatchObject({
+        previewUrl: "https://example.com/new-photo.jpg",
+        displayOrder: 3
+      });
+    });
+  });
+
+  it("promotes and removes gallery photos", async () => {
+    renderAdminGalleryPage();
+
+    fireEvent.change(await screen.findByLabelText("Add photo URL"), {
+      target: { value: "https://example.com/new-photo.jpg" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
+
+    const photo = await screen.findByAltText("Gallery photo 4");
+    const photoRow = photo.closest("li");
+    expect(photoRow).not.toBeNull();
+
     fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Promote to featured" }));
+
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
+      const promotedSource = stored.galleryPhotos.find(
+        (item: { id: string; previewUrl: string }) => item.previewUrl === "https://example.com/new-photo.jpg"
+      );
+      expect(
+        stored.portfolioPhotos.some(
+          (item: { sourceGalleryPhotoId: string }) => item.sourceGalleryPhotoId === promotedSource.id
+        )
+      ).toBe(true);
+    });
+
     fireEvent.click(within(photoRow as HTMLElement).getByRole("button", { name: "Remove photo" }));
 
     await waitFor(() => {
