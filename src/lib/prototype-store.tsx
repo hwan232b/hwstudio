@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
+import { normalizePhotoUrl } from "./google-drive";
 import { promoteGalleryPhoto } from "./portfolio";
 import { moveItemById } from "./reorder";
 import { initialState } from "./seed-data";
@@ -246,6 +247,25 @@ function isPrototypeState(value: unknown): value is PrototypeState {
   );
 }
 
+function normalizeStoredDrivePreviews(state: PrototypeState): PrototypeState {
+  return {
+    ...state,
+    galleryPhotos: state.galleryPhotos.map((photo) => {
+      const normalizedPhoto = normalizePhotoUrl(photo.downloadUrl);
+      if (!normalizedPhoto.driveFileId) {
+        return photo;
+      }
+
+      return {
+        ...photo,
+        driveFileId: normalizedPhoto.driveFileId,
+        previewUrl: normalizedPhoto.previewUrl,
+        downloadUrl: normalizedPhoto.downloadUrl
+      };
+    })
+  };
+}
+
 function loadStoredState(): PrototypeState | null {
   if (typeof window === "undefined") {
     return null;
@@ -264,7 +284,7 @@ function loadStoredState(): PrototypeState | null {
 
   try {
     const parsed = JSON.parse(stored);
-    return isPrototypeState(parsed) ? parsed : null;
+    return isPrototypeState(parsed) ? normalizeStoredDrivePreviews(parsed) : null;
   } catch {
     return null;
   }

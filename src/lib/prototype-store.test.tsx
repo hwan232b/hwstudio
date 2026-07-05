@@ -84,6 +84,36 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText("Persisted Client")).toBeInTheDocument();
   });
 
+  it("normalizes persisted Google Drive file previews when hydrating", () => {
+    const persistedState = {
+      ...initialState,
+      galleryPhotos: [
+        {
+          ...initialState.galleryPhotos[0],
+          id: "drive-photo",
+          driveFileId: "1abcDEFghiJKLmnop",
+          previewUrl: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing",
+          downloadUrl: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing"
+        }
+      ]
+    };
+    window.localStorage.setItem("hwstudio-prototype-state", JSON.stringify(persistedState));
+
+    function DrivePreviewProbe() {
+      const { state } = usePrototypeStore();
+      const photo = state.galleryPhotos.find((item) => item.id === "drive-photo");
+      return <p>{photo?.previewUrl ?? "missing"}</p>;
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <DrivePreviewProbe />
+      </PrototypeStoreProvider>
+    );
+
+    expect(screen.getByText("https://lh3.googleusercontent.com/d/1abcDEFghiJKLmnop=w1600")).toBeInTheDocument();
+  });
+
   it.each([
     ["malformed stored JSON", "{"],
     ["wrong-shaped stored JSON", JSON.stringify({ galleries: [] })]

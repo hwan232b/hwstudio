@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
-import { normalizePhotoUrl } from "@/lib/google-drive";
+import { isGoogleDriveFolderUrl, normalizePhotoUrl } from "@/lib/google-drive";
 import { usePrototypeStore } from "@/lib/prototype-store";
 import type { Gallery } from "@/lib/types";
 
@@ -106,6 +106,10 @@ export default function AdminGalleryPage() {
     event.preventDefault();
     const trimmedUrl = photoUrl.trim();
     if (!gallery || !trimmedUrl) {
+      return;
+    }
+    if (isGoogleDriveFolderUrl(trimmedUrl)) {
+      setStatusMessage("Folder links cannot preview a single photo yet. Paste an individual Google Drive file link.");
       return;
     }
 

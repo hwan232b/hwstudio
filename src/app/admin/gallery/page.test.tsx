@@ -102,10 +102,32 @@ describe("AdminGalleryPage", () => {
             item.downloadUrl === "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing"
         )
       ).toMatchObject({
-        previewUrl: "https://drive.google.com/thumbnail?id=1abcDEFghiJKLmnop&sz=w1600",
+        previewUrl: "https://lh3.googleusercontent.com/d/1abcDEFghiJKLmnop=w1600",
         downloadUrl: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing",
         driveFileId: "1abcDEFghiJKLmnop"
       });
+    });
+  });
+
+  it("rejects Google Drive folder links because they cannot render as a single photo", async () => {
+    renderAdminGalleryPage();
+
+    fireEvent.change(await screen.findByLabelText("Add photo URL"), {
+      target: { value: "https://drive.google.com/drive/folders/1folderABCdef?usp=sharing" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Folder links cannot preview a single photo yet. Paste an individual Google Drive file link."
+    );
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
+      expect(
+        stored.galleryPhotos.some(
+          (item: { downloadUrl: string }) =>
+            item.downloadUrl === "https://drive.google.com/drive/folders/1folderABCdef?usp=sharing"
+        )
+      ).toBe(false);
     });
   });
 
