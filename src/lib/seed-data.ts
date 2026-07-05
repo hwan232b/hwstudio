@@ -62,6 +62,10 @@ export const initialState: PrototypeState = {
       label: "Sample client"
     }
   ],
+  portfolioSettings: {
+    eyebrow: "Portfolio",
+    heading: "Selected work across portraits, events, and graduation stories."
+  },
   portfolioCategories: [
     { id: "cat-featured", name: "Featured", slug: "featured", description: "A curated first look.", displayOrder: 1, isVisible: true },
     { id: "cat-graduation", name: "Graduation", slug: "graduation", description: "Milestone sessions and campus stories.", displayOrder: 2, isVisible: true },

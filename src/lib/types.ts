@@ -45,6 +45,11 @@ export type PortfolioCategory = {
   isVisible: boolean;
 };
 
+export type PortfolioSettings = {
+  eyebrow: string;
+  heading: string;
+};
+
 export type PortfolioPhoto = {
   id: string;
   sourceGalleryPhotoId: string | null;
@@ -70,6 +75,7 @@ export type PrototypeState = {
   galleries: Gallery[];
   galleryPhotos: GalleryPhoto[];
   approvedEmails: ApprovedEmail[];
+  portfolioSettings: PortfolioSettings;
   portfolioCategories: PortfolioCategory[];
   portfolioPhotos: PortfolioPhoto[];
   contactInquiries: ContactInquiry[];

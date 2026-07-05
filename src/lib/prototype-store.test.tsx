@@ -84,6 +84,98 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText("Persisted Client")).toBeInTheDocument();
   });
 
+  it("hydrates portfolio settings from persisted state", () => {
+    const persistedState = {
+      ...initialState,
+      portfolioSettings: {
+        eyebrow: "Stories",
+        heading: "Editorial selections for prospective clients."
+      }
+    };
+    window.localStorage.setItem("hwstudio-prototype-state", JSON.stringify(persistedState));
+
+    function PortfolioSettingsHydrationProbe() {
+      const { state } = usePrototypeStore();
+      return (
+        <div>
+          <p>{state.portfolioSettings.eyebrow}</p>
+          <p>{state.portfolioSettings.heading}</p>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <PortfolioSettingsHydrationProbe />
+      </PrototypeStoreProvider>
+    );
+
+    expect(screen.getByText("Stories")).toBeInTheDocument();
+    expect(screen.getByText("Editorial selections for prospective clients.")).toBeInTheDocument();
+  });
+
+  it("updates portfolio settings and categories through the store", () => {
+    function PortfolioUpdateProbe() {
+      const { state, dispatch } = usePrototypeStore();
+      const featuredCategory = state.portfolioCategories.find((item) => item.id === "cat-featured");
+      const category = state.portfolioCategories.find((item) => item.id === "cat-graduation");
+
+      return (
+        <div>
+          <p>{state.portfolioSettings.eyebrow}</p>
+          <p>{state.portfolioSettings.heading}</p>
+          <p>{featuredCategory?.name}</p>
+          <p>{category?.name}</p>
+          <p>{category?.description}</p>
+          <button
+            type="button"
+            onClick={() =>
+              dispatch({
+                type: "portfolio-settings:update",
+                settings: {
+                  eyebrow: "Featured work",
+                  heading: "A tighter edit for launch."
+                }
+              })
+            }
+          >
+            Update settings
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              dispatch({
+                type: "portfolio-category:update",
+                category: {
+                  ...initialState.portfolioCategories[1],
+                  name: "Senior stories",
+                  description: "Graduation sessions with campus context."
+                }
+              })
+            }
+          >
+            Update category
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <PortfolioUpdateProbe />
+      </PrototypeStoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Update settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Update category" }));
+
+    expect(screen.getByText("Featured work")).toBeInTheDocument();
+    expect(screen.getByText("A tighter edit for launch.")).toBeInTheDocument();
+    expect(screen.getByText("Senior stories")).toBeInTheDocument();
+    expect(screen.getByText("Graduation sessions with campus context.")).toBeInTheDocument();
+    expect(screen.getByText("Featured")).toBeInTheDocument();
+  });
+
   it("normalizes persisted Google Drive file previews when hydrating", () => {
     const persistedState = {
       ...initialState,

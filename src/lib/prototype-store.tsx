@@ -12,6 +12,7 @@ import type {
   GalleryPhoto,
   PortfolioPhoto,
   PortfolioCategory,
+  PortfolioSettings,
   PrototypeState
 } from "./types";
 
@@ -23,7 +24,9 @@ type PrototypeAction =
   | { type: "approved-email:add"; email: ApprovedEmail }
   | { type: "approved-email:remove"; emailId: string }
   | { type: "portfolio:promote-gallery-photo"; photoId: string; categoryIds: string[] }
+  | { type: "portfolio-settings:update"; settings: PortfolioSettings }
   | { type: "portfolio-photo:remove"; photoId: string }
+  | { type: "portfolio-category:update"; category: PortfolioCategory }
   | { type: "portfolio-category:move"; categoryId: string; direction: "up" | "down" }
   | { type: "inquiry:add"; inquiry: ContactInquiry }
   | { type: "hydrate"; state: PrototypeState }
@@ -76,10 +79,22 @@ function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState
         portfolioPhotos: promoteGalleryPhoto(state.portfolioPhotos, galleryPhoto, action.categoryIds)
       };
     }
+    case "portfolio-settings:update":
+      return {
+        ...state,
+        portfolioSettings: action.settings
+      };
     case "portfolio-photo:remove":
       return {
         ...state,
         portfolioPhotos: state.portfolioPhotos.filter((photo) => photo.id !== action.photoId)
+      };
+    case "portfolio-category:update":
+      return {
+        ...state,
+        portfolioCategories: state.portfolioCategories.map((category) =>
+          category.id === action.category.id ? action.category : category
+        )
       };
     case "portfolio-category:move":
       return {
@@ -200,6 +215,10 @@ function isPortfolioCategory(value: unknown): value is PortfolioCategory {
   );
 }
 
+function isPortfolioSettings(value: unknown): value is PortfolioSettings {
+  return isRecord(value) && hasStringFields(value, ["eyebrow", "heading"]);
+}
+
 function isPortfolioPhoto(value: unknown): value is PortfolioPhoto {
   if (!isRecord(value)) {
     return false;
@@ -241,6 +260,7 @@ function isPrototypeState(value: unknown): value is PrototypeState {
     isArrayOf(value.galleries, isGallery) &&
     isArrayOf(value.galleryPhotos, isGalleryPhoto) &&
     isArrayOf(value.approvedEmails, isApprovedEmail) &&
+    isPortfolioSettings(value.portfolioSettings) &&
     isArrayOf(value.portfolioCategories, isPortfolioCategory) &&
     isArrayOf(value.portfolioPhotos, isPortfolioPhoto) &&
     isArrayOf(value.contactInquiries, isContactInquiry)
