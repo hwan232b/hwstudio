@@ -29,6 +29,10 @@ const portfolioState: PrototypeState = {
       isVisible: true
     }
   ],
+  portfolioSettings: {
+    eyebrow: "Portfolio",
+    heading: "Selected work across portraits, events, and graduation stories."
+  },
   portfolioPhotos: [
     {
       id: "portfolio-photo-portraits",
