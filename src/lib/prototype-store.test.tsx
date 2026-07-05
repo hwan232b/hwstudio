@@ -114,6 +114,41 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText("Editorial selections for prospective clients.")).toBeInTheDocument();
   });
 
+  it("migrates older persisted state without portfolio settings while preserving user data", () => {
+    const { portfolioSettings: _portfolioSettings, ...olderPersistedState } = {
+      ...initialState,
+      galleries: [
+        {
+          ...initialState.galleries[0],
+          title: "Persisted Gallery Title"
+        },
+        ...initialState.galleries.slice(1)
+      ]
+    };
+    window.localStorage.setItem("hwstudio-prototype-state", JSON.stringify(olderPersistedState));
+
+    function PortfolioSettingsMigrationProbe() {
+      const { state } = usePrototypeStore();
+      return (
+        <div>
+          <p>{state.galleries[0]?.title}</p>
+          <p>{state.portfolioSettings.eyebrow}</p>
+          <p>{state.portfolioSettings.heading}</p>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <PortfolioSettingsMigrationProbe />
+      </PrototypeStoreProvider>
+    );
+
+    expect(screen.getByText("Persisted Gallery Title")).toBeInTheDocument();
+    expect(screen.getByText(initialState.portfolioSettings.eyebrow)).toBeInTheDocument();
+    expect(screen.getByText(initialState.portfolioSettings.heading)).toBeInTheDocument();
+  });
+
   it("updates portfolio settings and categories through the store", () => {
     function PortfolioUpdateProbe() {
       const { state, dispatch } = usePrototypeStore();

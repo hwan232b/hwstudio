@@ -286,6 +286,17 @@ function normalizeStoredDrivePreviews(state: PrototypeState): PrototypeState {
   };
 }
 
+function migrateStoredState(value: unknown): unknown {
+  if (!isRecord(value) || "portfolioSettings" in value) {
+    return value;
+  }
+
+  return {
+    ...value,
+    portfolioSettings: initialState.portfolioSettings
+  };
+}
+
 function loadStoredState(): PrototypeState | null {
   if (typeof window === "undefined") {
     return null;
@@ -304,7 +315,8 @@ function loadStoredState(): PrototypeState | null {
 
   try {
     const parsed = JSON.parse(stored);
-    return isPrototypeState(parsed) ? normalizeStoredDrivePreviews(parsed) : null;
+    const migrated = migrateStoredState(parsed);
+    return isPrototypeState(migrated) ? normalizeStoredDrivePreviews(migrated) : null;
   } catch {
     return null;
   }
