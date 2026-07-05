@@ -211,6 +211,48 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText("Featured")).toBeInTheDocument();
   });
 
+  it("adds a direct portfolio photo through the store", () => {
+    function PortfolioPhotoAddProbe() {
+      const { state, dispatch } = usePrototypeStore();
+      const addedPhoto = state.portfolioPhotos.find((photo) => photo.id === "portfolio-photo-added");
+
+      return (
+        <div>
+          <p>{addedPhoto ? addedPhoto.alt : "not added"}</p>
+          <button
+            type="button"
+            onClick={() =>
+              dispatch({
+                type: "portfolio-photo:add",
+                photo: {
+                  id: "portfolio-photo-added",
+                  sourceGalleryPhotoId: null,
+                  previewUrl: "https://example.com/direct.jpg",
+                  alt: "Direct portfolio photo",
+                  categoryIds: ["cat-featured"],
+                  displayOrder: 2,
+                  isFeatured: true
+                }
+              })
+            }
+          >
+            Add portfolio photo
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <PortfolioPhotoAddProbe />
+      </PrototypeStoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Add portfolio photo" }));
+
+    expect(screen.getByText("Direct portfolio photo")).toBeInTheDocument();
+  });
+
   it("normalizes persisted Google Drive file previews when hydrating", () => {
     const persistedState = {
       ...initialState,

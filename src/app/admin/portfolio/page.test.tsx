@@ -105,6 +105,99 @@ describe("AdminPortfolioPage", () => {
     });
   });
 
+  it("saves portfolio intro copy and category details", async () => {
+    renderAdminPortfolioPage();
+
+    fireEvent.change(await screen.findByLabelText("Portfolio eyebrow"), {
+      target: { value: "Featured stories" }
+    });
+    fireEvent.change(screen.getByLabelText("Portfolio heading"), {
+      target: { value: "A refined edit for launch." }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save intro copy" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Portfolio intro saved.");
+
+    const featuredCategory = screen.getByRole("listitem", { name: "Category: Featured" });
+    fireEvent.change(within(featuredCategory).getByLabelText("Section name"), {
+      target: { value: "Featured moments" }
+    });
+    fireEvent.change(within(featuredCategory).getByLabelText("Section description"), {
+      target: { value: "A lead selection of portfolio images." }
+    });
+    fireEvent.click(within(featuredCategory).getByLabelText("Visible on portfolio"));
+    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Save section" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Portfolio section saved.");
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
+      expect(stored.portfolioSettings).toEqual({
+        eyebrow: "Featured stories",
+        heading: "A refined edit for launch."
+      });
+      expect(stored.portfolioCategories).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "cat-featured",
+            name: "Featured moments",
+            description: "A lead selection of portfolio images.",
+            isVisible: false
+          })
+        ])
+      );
+    });
+  });
+
+  it("adds Google Drive portfolio photo to a section", async () => {
+    renderAdminPortfolioPage();
+
+    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
+    fireEvent.change(within(featuredCategory).getByLabelText("Photo URL"), {
+      target: { value: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing" }
+    });
+    fireEvent.change(within(featuredCategory).getByLabelText("Alt text"), {
+      target: { value: "Featured senior portrait" }
+    });
+    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Add photo to Featured" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Portfolio photo added.");
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
+      expect(stored.portfolioPhotos).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            previewUrl: "https://lh3.googleusercontent.com/d/1abcDEFghiJKLmnop=w1600",
+            alt: "Featured senior portrait",
+            categoryIds: ["cat-featured"],
+            displayOrder: 3,
+            isFeatured: true
+          })
+        ])
+      );
+    });
+  });
+
+  it("rejects Google Drive folder links for portfolio photos", async () => {
+    renderAdminPortfolioPage();
+
+    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
+    fireEvent.change(within(featuredCategory).getByLabelText("Photo URL"), {
+      target: { value: "https://drive.google.com/drive/folders/1folderId" }
+    });
+    fireEvent.change(within(featuredCategory).getByLabelText("Alt text"), {
+      target: { value: "Folder link" }
+    });
+    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Add photo to Featured" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Folder links cannot preview a single photo yet. Paste an individual Google Drive file link."
+    );
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
+      expect(stored.portfolioPhotos).toHaveLength(2);
+    });
+  });
+
   it("removes portfolio photos through the prototype store", async () => {
     renderAdminPortfolioPage();
 

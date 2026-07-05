@@ -25,6 +25,7 @@ type PrototypeAction =
   | { type: "approved-email:remove"; emailId: string }
   | { type: "portfolio:promote-gallery-photo"; photoId: string; categoryIds: string[] }
   | { type: "portfolio-settings:update"; settings: PortfolioSettings }
+  | { type: "portfolio-photo:add"; photo: PortfolioPhoto }
   | { type: "portfolio-photo:remove"; photoId: string }
   | { type: "portfolio-category:update"; category: PortfolioCategory }
   | { type: "portfolio-category:move"; categoryId: string; direction: "up" | "down" }
@@ -83,6 +84,11 @@ function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState
       return {
         ...state,
         portfolioSettings: action.settings
+      };
+    case "portfolio-photo:add":
+      return {
+        ...state,
+        portfolioPhotos: [...state.portfolioPhotos, action.photo]
       };
     case "portfolio-photo:remove":
       return {
