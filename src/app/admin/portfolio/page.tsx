@@ -75,7 +75,7 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
     event.preventDefault();
     const trimmedUrl = photoUrl.trim();
     const trimmedAlt = photoAlt.trim();
-    if (!trimmedUrl || !trimmedAlt) {
+    if (!trimmedUrl) {
       return;
     }
     if (isGoogleDriveFolderUrl(trimmedUrl)) {
@@ -87,13 +87,14 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
     const nextDisplayOrder =
       portfolioPhotos.length === 0 ? 1 : Math.max(...portfolioPhotos.map((photo) => photo.displayOrder)) + 1;
     const normalizedPhoto = normalizePhotoUrl(trimmedUrl);
+    const photoAltText = trimmedAlt || `${category.name} portfolio photo ${nextDisplayOrder}`;
     dispatch({
       type: "portfolio-photo:add",
       photo: {
         id: `portfolio-photo-${timestamp}`,
         sourceGalleryPhotoId: null,
         previewUrl: normalizedPhoto.previewUrl,
-        alt: trimmedAlt,
+        alt: photoAltText,
         categoryIds: [category.id],
         displayOrder: nextDisplayOrder,
         isFeatured: category.id === "cat-featured"
@@ -134,7 +135,7 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
           />
         </label>
         <label>
-          Alt text
+          Alt text optional
           <input value={photoAlt} onChange={(event) => setPhotoAlt(event.target.value)} />
         </label>
         <button className="text-button" type="submit">

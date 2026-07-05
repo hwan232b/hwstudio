@@ -189,7 +189,7 @@ describe("AdminPortfolioPage", () => {
     fireEvent.change(within(graduationCategory).getByLabelText("Photo URL"), {
       target: { value: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing" }
     });
-    fireEvent.change(within(graduationCategory).getByLabelText("Alt text"), {
+    fireEvent.change(within(graduationCategory).getByLabelText("Alt text optional"), {
       target: { value: "Graduation senior portrait" }
     });
     fireEvent.click(within(graduationCategory).getByRole("button", { name: "Add photo to Graduation" }));
@@ -212,6 +212,31 @@ describe("AdminPortfolioPage", () => {
     });
   });
 
+  it("adds a portfolio photo with an automatic alt label when only a URL is entered", async () => {
+    renderAdminPortfolioPage();
+
+    const graduationCategory = await screen.findByRole("listitem", { name: "Category: Graduation" });
+    fireEvent.change(within(graduationCategory).getByLabelText("Photo URL"), {
+      target: { value: "https://example.com/graduation-detail.jpg" }
+    });
+    fireEvent.click(within(graduationCategory).getByRole("button", { name: "Add photo to Graduation" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent("Portfolio photo added.");
+    expect(within(graduationCategory).getByAltText("Graduation portfolio photo 3")).toBeInTheDocument();
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) ?? "{}") as PrototypeState;
+      expect(stored.portfolioPhotos).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            previewUrl: "https://example.com/graduation-detail.jpg",
+            alt: "Graduation portfolio photo 3",
+            categoryIds: ["cat-graduation"]
+          })
+        ])
+      );
+    });
+  });
+
   it("rejects Google Drive folder links for portfolio photos", async () => {
     renderAdminPortfolioPage();
 
@@ -219,7 +244,7 @@ describe("AdminPortfolioPage", () => {
     fireEvent.change(within(graduationCategory).getByLabelText("Photo URL"), {
       target: { value: "https://drive.google.com/drive/folders/1folderId" }
     });
-    fireEvent.change(within(graduationCategory).getByLabelText("Alt text"), {
+    fireEvent.change(within(graduationCategory).getByLabelText("Alt text optional"), {
       target: { value: "Folder link" }
     });
     fireEvent.click(within(graduationCategory).getByRole("button", { name: "Add photo to Graduation" }));
