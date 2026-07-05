@@ -312,7 +312,62 @@ h1 {
   padding: 10px 12px;
 }
 
+.contact-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.7fr);
+  gap: 56px;
+  align-items: start;
+}
+
+.contact-intro {
+  border-top: 1px solid var(--color-ink);
+  padding-top: 28px;
+}
+
+.contact-form {
+  display: grid;
+  gap: 16px;
+  padding: 28px 0;
+  border-top: 1px solid var(--color-ink);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.contact-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  padding: 10px 12px;
+}
+
+.contact-form input,
+.contact-form select {
+  min-height: 46px;
+}
+
+.contact-form textarea {
+  resize: vertical;
+}
+
+.contact-form .dark-button {
+  width: 100%;
+  cursor: pointer;
+}
+
 .access-form input:focus,
+.contact-form input:focus,
+.contact-form select:focus,
+.contact-form textarea:focus,
 .photo-button:focus-visible,
 .text-button:focus-visible,
 .dark-button:focus-visible {
@@ -324,6 +379,96 @@ h1 {
   margin: 0;
   color: #8b2f24;
   line-height: 1.5;
+}
+
+.form-success {
+  margin: 0;
+  color: var(--color-accent);
+  line-height: 1.5;
+}
+
+.admin-inquiries-shell h1 {
+  border-top: 1px solid var(--color-ink);
+  padding-top: 28px;
+}
+
+.inquiry-list {
+  margin-top: 42px;
+  display: grid;
+  gap: 22px;
+}
+
+.inquiry-card {
+  padding: 24px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.inquiry-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.inquiry-card-heading h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.inquiry-card-heading p,
+.inquiry-message {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.inquiry-card-heading p {
+  margin: 10px 0 0;
+}
+
+.inquiry-card-heading span {
+  border: 1px solid var(--color-line);
+  padding: 6px 10px;
+  color: var(--color-accent);
+  text-transform: capitalize;
+  font-size: 0.82rem;
+}
+
+.inquiry-meta {
+  margin: 24px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.inquiry-meta div {
+  border-top: 1px solid var(--color-line);
+  padding-top: 12px;
+}
+
+.inquiry-meta dt {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.inquiry-meta dd {
+  margin: 8px 0 0;
+}
+
+.inquiry-message {
+  max-width: 720px;
+  margin: 24px 0 0;
+}
+
+.admin-empty {
+  margin-top: 42px;
+  padding: 28px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-muted);
 }
 
 .gallery-viewer {
@@ -395,6 +540,7 @@ h1 {
   .section-heading,
   .home-mosaic,
   .gallery-card,
+  .contact-shell,
   .gallery-toolbar,
   .active-photo figcaption {
     display: block;
@@ -415,8 +561,23 @@ h1 {
   }
 
   .gallery-card-copy,
+  .contact-form,
   .gallery-toolbar .text-button,
   .active-photo .text-button {
     margin-top: 16px;
+  }
+
+  .inquiry-card-heading,
+  .inquiry-meta {
+    display: block;
+  }
+
+  .inquiry-card-heading span {
+    display: inline-flex;
+    margin-top: 16px;
+  }
+
+  .inquiry-meta div + div {
+    margin-top: 14px;
   }
 }
