@@ -19,8 +19,8 @@ export default function PortfolioPage() {
     <>
       <SiteHeader />
       <main className="page-shell">
-        <p className="eyebrow">Portfolio</p>
-        <h1>Selected work across portraits, events, and graduation stories.</h1>
+        <p className="eyebrow">{state.portfolioSettings.eyebrow}</p>
+        <h1 className="portfolio-heading">{state.portfolioSettings.heading}</h1>
         {categories.length > 0 ? (
           <div className="category-stack">
             {categories.map(({ category, photos }) => (

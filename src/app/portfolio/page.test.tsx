@@ -45,4 +45,26 @@ describe("PortfolioPage", () => {
     });
     expect(screen.queryByRole("heading", { name: "Featured" })).not.toBeInTheDocument();
   });
+
+  it("renders persisted portfolio intro copy", async () => {
+    window.localStorage.setItem(
+      "hwstudio-prototype-state",
+      JSON.stringify({
+        ...initialState,
+        portfolioSettings: {
+          eyebrow: "Selected Work",
+          heading: "A softer look at portraits and graduation days."
+        }
+      })
+    );
+
+    renderPortfolioPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("Selected Work")).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "A softer look at portraits and graduation days." })
+      ).toBeInTheDocument();
+    });
+  });
 });
