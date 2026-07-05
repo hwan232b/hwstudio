@@ -20,12 +20,6 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
   const [photoUrl, setPhotoUrl] = useState("");
   const [photoAlt, setPhotoAlt] = useState("");
 
-  useEffect(() => {
-    setName(category.name);
-    setDescription(category.description);
-    setIsVisible(category.isVisible);
-  }, [category]);
-
   function saveSection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     dispatch({

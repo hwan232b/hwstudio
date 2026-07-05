@@ -105,6 +105,19 @@ describe("AdminPortfolioPage", () => {
     });
   });
 
+  it("preserves unsaved category section drafts while moving categories", async () => {
+    renderAdminPortfolioPage();
+
+    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Featured" });
+    fireEvent.change(within(featuredCategory).getByLabelText("Section name"), {
+      target: { value: "Draft Highlights" }
+    });
+    fireEvent.click(within(featuredCategory).getByRole("button", { name: "Move Featured down" }));
+
+    const movedFeaturedCategory = screen.getByRole("listitem", { name: "Category: Featured" });
+    expect(within(movedFeaturedCategory).getByLabelText("Section name")).toHaveValue("Draft Highlights");
+  });
+
   it("saves portfolio intro copy and category details", async () => {
     renderAdminPortfolioPage();
 
