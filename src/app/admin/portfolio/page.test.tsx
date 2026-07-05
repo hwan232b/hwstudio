@@ -118,6 +118,27 @@ describe("AdminPortfolioPage", () => {
     expect(within(movedFeaturedCategory).getByLabelText("Section name")).toHaveValue("Draft Highlights");
   });
 
+  it("hydrates category section fields from persisted state", async () => {
+    renderAdminPortfolioPage({
+      ...portfolioState,
+      portfolioCategories: portfolioState.portfolioCategories.map((category) =>
+        category.id === "cat-featured"
+          ? {
+              ...category,
+              name: "Persisted Highlights",
+              description: "Persisted featured copy.",
+              isVisible: false
+            }
+          : category
+      )
+    });
+
+    const featuredCategory = await screen.findByRole("listitem", { name: "Category: Persisted Highlights" });
+    expect(within(featuredCategory).getByLabelText("Section name")).toHaveValue("Persisted Highlights");
+    expect(within(featuredCategory).getByLabelText("Section description")).toHaveValue("Persisted featured copy.");
+    expect(within(featuredCategory).getByLabelText("Visible on portfolio")).not.toBeChecked();
+  });
+
   it("saves portfolio intro copy and category details", async () => {
     renderAdminPortfolioPage();
 

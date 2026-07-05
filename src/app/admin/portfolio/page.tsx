@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
 import { isGoogleDriveFolderUrl, normalizePhotoUrl } from "@/lib/google-drive";
 import { usePrototypeStore } from "@/lib/prototype-store";
@@ -12,6 +12,8 @@ type CategoryEditorProps = {
   onStatusChange: (message: string) => void;
 };
 
+type CategoryEditorContent = Pick<PortfolioCategory, "id" | "name" | "description" | "isVisible">;
+
 function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryEditorProps) {
   const { dispatch } = usePrototypeStore();
   const [name, setName] = useState(category.name);
@@ -19,6 +21,34 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
   const [isVisible, setIsVisible] = useState(category.isVisible);
   const [photoUrl, setPhotoUrl] = useState("");
   const [photoAlt, setPhotoAlt] = useState("");
+  const lastSyncedContent = useRef<CategoryEditorContent>({
+    id: category.id,
+    name: category.name,
+    description: category.description,
+    isVisible: category.isVisible
+  });
+
+  useEffect(() => {
+    const previousContent = lastSyncedContent.current;
+    const localFieldsMatchPreviousContent =
+      name === previousContent.name &&
+      description === previousContent.description &&
+      isVisible === previousContent.isVisible;
+    const categoryIdChanged = category.id !== previousContent.id;
+
+    if (categoryIdChanged || localFieldsMatchPreviousContent) {
+      setName(category.name);
+      setDescription(category.description);
+      setIsVisible(category.isVisible);
+    }
+
+    lastSyncedContent.current = {
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      isVisible: category.isVisible
+    };
+  }, [category.description, category.id, category.isVisible, category.name, description, isVisible, name]);
 
   function saveSection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
