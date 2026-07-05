@@ -85,6 +85,30 @@ describe("AdminGalleryPage", () => {
     });
   });
 
+  it("converts Google Drive file links into preview image URLs", async () => {
+    renderAdminGalleryPage();
+
+    fireEvent.change(await screen.findByLabelText("Add photo URL"), {
+      target: { value: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add photo" }));
+
+    await screen.findByAltText("Gallery photo 4");
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
+      expect(
+        stored.galleryPhotos.find(
+          (item: { downloadUrl: string }) =>
+            item.downloadUrl === "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing"
+        )
+      ).toMatchObject({
+        previewUrl: "https://drive.google.com/thumbnail?id=1abcDEFghiJKLmnop&sz=w1600",
+        downloadUrl: "https://drive.google.com/file/d/1abcDEFghiJKLmnop/view?usp=sharing",
+        driveFileId: "1abcDEFghiJKLmnop"
+      });
+    });
+  });
+
   it("promotes and removes gallery photos", async () => {
     renderAdminGalleryPage();
 

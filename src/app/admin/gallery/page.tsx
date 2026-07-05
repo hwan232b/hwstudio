@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
+import { normalizePhotoUrl } from "@/lib/google-drive";
 import { usePrototypeStore } from "@/lib/prototype-store";
 import type { Gallery } from "@/lib/types";
 
@@ -110,14 +111,15 @@ export default function AdminGalleryPage() {
 
     const nextDisplayOrder = photos.length === 0 ? 1 : Math.max(...photos.map((photo) => photo.displayOrder)) + 1;
     const timestamp = Date.now();
+    const normalizedPhoto = normalizePhotoUrl(trimmedUrl);
     dispatch({
       type: "gallery-photo:add",
       photo: {
         id: `gallery-photo-${timestamp}`,
         galleryId: gallery.id,
-        driveFileId: `manual-drive-file-${timestamp}`,
-        previewUrl: trimmedUrl,
-        downloadUrl: trimmedUrl,
+        driveFileId: normalizedPhoto.driveFileId ?? `manual-drive-file-${timestamp}`,
+        previewUrl: normalizedPhoto.previewUrl,
+        downloadUrl: normalizedPhoto.downloadUrl,
         alt: `Gallery photo ${nextDisplayOrder}`,
         displayOrder: nextDisplayOrder,
         isVisible: true,
@@ -259,7 +261,7 @@ export default function AdminGalleryPage() {
                 type="url"
                 value={photoUrl}
                 onChange={(event) => setPhotoUrl(event.target.value)}
-                placeholder="https://"
+                placeholder="Direct image URL or Google Drive file link"
               />
             </label>
             <button className="text-button" type="submit">
