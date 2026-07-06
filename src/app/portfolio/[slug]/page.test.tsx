@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useParams } from "next/navigation";
@@ -34,6 +34,19 @@ describe("PortfolioCategoryPage", () => {
     expect(screen.getByText("Milestone sessions and campus stories.")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Graduation portrait with warm outdoor light" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to portfolio" })).toHaveAttribute("href", "/portfolio");
+  });
+
+  it("opens portfolio photos in a lightbox and closes from the backdrop", () => {
+    renderPortfolioCategoryPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Enlarge Graduation portrait with warm outdoor light" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Expanded photo" });
+    expect(within(dialog).getByRole("img", { name: "Graduation portrait with warm outdoor light" })).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByTestId("photo-lightbox-backdrop"));
+
+    expect(screen.queryByRole("dialog", { name: "Expanded photo" })).not.toBeInTheDocument();
   });
 
   it("handles missing portfolio categories", () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { PhotoLightbox } from "./PhotoLightbox";
 import type { Gallery, GalleryPhoto } from "@/lib/types";
 
 type GalleryViewerProps = {
@@ -14,6 +15,7 @@ export function GalleryViewer({ gallery, photos }: GalleryViewerProps) {
     [photos]
   );
   const [activePhotoId, setActivePhotoId] = useState<string | null>(visiblePhotos[0]?.id ?? null);
+  const [expandedPhoto, setExpandedPhoto] = useState<GalleryPhoto | null>(null);
   const activePhoto = visiblePhotos.find((photo) => photo.id === activePhotoId) ?? visiblePhotos[0] ?? null;
 
   if (!activePhoto) {
@@ -46,7 +48,14 @@ export function GalleryViewer({ gallery, photos }: GalleryViewerProps) {
       </div>
 
       <figure className="active-photo">
-        <img src={activePhoto.previewUrl} alt={activePhoto.alt} />
+        <button
+          className="active-photo-button"
+          type="button"
+          aria-label={`Enlarge ${activePhoto.alt}`}
+          onClick={() => setExpandedPhoto(activePhoto)}
+        >
+          <img src={activePhoto.previewUrl} alt={activePhoto.alt} />
+        </button>
         <figcaption>
           <span>{activePhoto.alt}</span>
           <a className="text-button" href={activePhoto.downloadUrl}>
@@ -69,6 +78,7 @@ export function GalleryViewer({ gallery, photos }: GalleryViewerProps) {
           </button>
         ))}
       </div>
+      <PhotoLightbox photo={expandedPhoto} onClose={() => setExpandedPhoto(null)} />
     </section>
   );
 }

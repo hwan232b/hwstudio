@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { GalleryViewer } from "./GalleryViewer";
@@ -83,5 +83,21 @@ describe("GalleryViewer", () => {
       "href",
       "https://example.com/second-download.jpg"
     );
+  });
+
+  it("opens the active gallery photo in a lightbox and closes from the backdrop", () => {
+    render(<GalleryViewer gallery={gallery} photos={photos} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Enlarge First visible photo" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Expanded photo" });
+    expect(within(dialog).getByRole("img", { name: "First visible photo" })).toHaveAttribute(
+      "src",
+      "https://example.com/first.jpg"
+    );
+
+    fireEvent.mouseDown(screen.getByTestId("photo-lightbox-backdrop"));
+
+    expect(screen.queryByRole("dialog", { name: "Expanded photo" })).not.toBeInTheDocument();
   });
 });
