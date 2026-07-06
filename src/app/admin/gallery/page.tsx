@@ -170,6 +170,7 @@ export default function AdminGalleryPage() {
       gallery: {
         ...gallery,
         ...values,
+        driveFolderId: extractGoogleDriveFolderId(values.fullDownloadUrl) ?? gallery.driveFolderId,
         expirationDate: values.expirationDate?.trim() ? values.expirationDate : null
       }
     });

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GalleryViewer } from "./GalleryViewer";
 import type { Gallery, GalleryPhoto } from "@/lib/types";
 
@@ -16,7 +16,7 @@ const gallery: Gallery = {
   passcode: "secret",
   requiresApprovedEmail: true,
   expirationDate: "2099-01-01",
-  driveFolderId: "drive-folder-1",
+  driveFolderId: "",
   fullDownloadUrl: "https://drive.google.com/gallery",
   status: "active"
 };
@@ -58,6 +58,10 @@ const photos: GalleryPhoto[] = [
 ];
 
 describe("GalleryViewer", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("shows visible photos in display order with gallery and photo downloads", () => {
     render(<GalleryViewer gallery={gallery} photos={photos} />);
 
@@ -99,5 +103,30 @@ describe("GalleryViewer", () => {
     fireEvent.mouseDown(screen.getByTestId("photo-lightbox-backdrop"));
 
     expect(screen.queryByRole("dialog", { name: "Expanded photo" })).not.toBeInTheDocument();
+  });
+
+  it("loads public Google Drive folder photos into the gallery", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        photos: [
+          {
+            id: "drive-folder-photo-synced",
+            driveFileId: "drive-synced",
+            previewUrl: "https://lh3.googleusercontent.com/d/drive-synced=w1600",
+            downloadUrl: "https://drive.google.com/file/d/drive-synced/view",
+            alt: "Synced Drive photo",
+            displayOrder: 1,
+            isVisible: true,
+            isPortfolioEligible: true
+          }
+        ]
+      })
+    } as Response);
+
+    render(<GalleryViewer gallery={{ ...gallery, driveFolderId: "folder-1" }} photos={[]} />);
+
+    expect(await screen.findByRole("img", { name: "Synced Drive photo" })).toBeInTheDocument();
+    expect(screen.getByText("Synced from Google Drive.")).toBeInTheDocument();
   });
 });

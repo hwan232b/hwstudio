@@ -923,6 +923,16 @@ h1 {
   border-bottom: 1px solid var(--color-line);
 }
 
+.drive-sync-status {
+  margin: -8px 0 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.drive-sync-status-error {
+  color: var(--color-accent);
+}
+
 .active-photo {
   margin: 0;
   display: grid;

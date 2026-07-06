@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useParams } from "next/navigation";
 import { PrototypeStoreProvider } from "@/lib/prototype-store";
 import { initialState } from "@/lib/seed-data";
@@ -26,6 +26,14 @@ describe("GalleryPage", () => {
   beforeEach(() => {
     window.localStorage.clear();
     mockedUseParams.mockReset();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ photos: [] })
+    } as Response);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("shows a private gallery intro before access is granted", () => {
@@ -37,7 +45,7 @@ describe("GalleryPage", () => {
     expect(screen.getByLabelText("Approved email")).toBeInTheDocument();
   });
 
-  it("opens the gallery with the seeded passcode and approved email", () => {
+  it("opens the gallery with the seeded passcode and approved email", async () => {
     renderGalleryPage();
 
     fireEvent.change(screen.getByLabelText("Passcode"), { target: { value: "hwstudio" } });
@@ -46,6 +54,7 @@ describe("GalleryPage", () => {
 
     expect(screen.getByRole("link", { name: "Download full gallery" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Graduation portrait session with warm outdoor light" })).toBeInTheDocument();
+    expect(await screen.findByText("Synced from Google Drive.")).toBeInTheDocument();
   });
 
   it("maps inactive galleries to a clear access error", async () => {

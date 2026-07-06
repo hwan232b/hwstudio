@@ -23,6 +23,9 @@ describe("AdminGalleryPage", () => {
     const title = await screen.findByLabelText("Title");
     fireEvent.change(title, { target: { value: "Summer Gallery" } });
     fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "summer-gallery" } });
+    fireEvent.change(screen.getByLabelText("Full download URL"), {
+      target: { value: "https://drive.google.com/drive/folders/1updatedFolder" }
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save gallery" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("Gallery saved.");
@@ -30,7 +33,8 @@ describe("AdminGalleryPage", () => {
       const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
       expect(stored.galleries[0]).toMatchObject({
         title: "Summer Gallery",
-        slug: "summer-gallery"
+        slug: "summer-gallery",
+        driveFolderId: "1updatedFolder"
       });
     });
   });
