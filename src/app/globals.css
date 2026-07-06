@@ -611,6 +611,30 @@ h1 {
   align-items: start;
 }
 
+.admin-gallery-management {
+  margin-top: 42px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(360px, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.admin-gallery-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.selected-button {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
+.new-gallery-form h2 {
+  margin-bottom: 4px;
+}
+
 .admin-panel {
   padding: 22px;
 }
@@ -1030,6 +1054,7 @@ h1 {
 
   .admin-stat-grid,
   .admin-editor-grid,
+  .admin-gallery-management,
   .admin-two-column,
   .admin-inline-form,
   .admin-photo-list li,

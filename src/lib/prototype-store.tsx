@@ -19,6 +19,7 @@ import type {
 } from "./types";
 
 type PrototypeAction =
+  | { type: "gallery:add"; gallery: Gallery }
   | { type: "gallery:update"; gallery: Gallery }
   | { type: "gallery-photo:add"; photo: GalleryPhoto }
   | { type: "gallery-photo:remove"; photoId: string }
@@ -43,6 +44,11 @@ const retiredPortfolioCategoryIds = ["cat-featured"];
 
 function reducer(state: PrototypeState, action: PrototypeAction): PrototypeState {
   switch (action.type) {
+    case "gallery:add":
+      return {
+        ...state,
+        galleries: [...state.galleries, action.gallery]
+      };
     case "gallery:update":
       return {
         ...state,

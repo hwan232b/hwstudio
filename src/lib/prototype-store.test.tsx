@@ -48,6 +48,45 @@ describe("PrototypeStoreProvider", () => {
     expect(screen.getByText("cat-graduation")).toBeInTheDocument();
   });
 
+  it("adds a gallery through the store reducer", () => {
+    function AddGalleryProbe() {
+      const { state, dispatch } = usePrototypeStore();
+      return (
+        <div>
+          <p>{state.galleries.map((gallery) => gallery.title).join(",")}</p>
+          <button
+            type="button"
+            onClick={() =>
+              dispatch({
+                type: "gallery:add",
+                gallery: {
+                  ...initialState.galleries[0],
+                  id: "gallery-new",
+                  title: "New Gallery",
+                  slug: "new-gallery",
+                  displayOrder: 2,
+                  coverPhotoId: ""
+                }
+              })
+            }
+          >
+            Add gallery
+          </button>
+        </div>
+      );
+    }
+
+    render(
+      <PrototypeStoreProvider>
+        <AddGalleryProbe />
+      </PrototypeStoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Add gallery" }));
+
+    expect(screen.getByText("Spring Graduation Preview,New Gallery")).toBeInTheDocument();
+  });
+
   it("renders seed state first before hydrating persisted state", () => {
     const renderSnapshots: string[] = [];
     const persistedState = {

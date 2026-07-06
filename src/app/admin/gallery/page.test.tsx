@@ -35,6 +35,45 @@ describe("AdminGalleryPage", () => {
     });
   });
 
+  it("creates a new gallery from required setup fields and selects it", async () => {
+    renderAdminGalleryPage();
+
+    fireEvent.change(await screen.findByLabelText("New gallery title"), {
+      target: { value: "Senior Portrait Preview" }
+    });
+    fireEvent.change(screen.getByLabelText("New gallery event date"), {
+      target: { value: "2026-08-14" }
+    });
+    fireEvent.change(screen.getByLabelText("New gallery passcode"), {
+      target: { value: "senior2026" }
+    });
+    fireEvent.change(screen.getByLabelText("New gallery full download URL"), {
+      target: { value: "https://drive.google.com/drive/folders/1folderABCdef" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create gallery" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Gallery created.");
+    expect(screen.getByDisplayValue("Senior Portrait Preview")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("senior-portrait-preview")).toBeInTheDocument();
+
+    await waitFor(() => {
+      const stored = JSON.parse(window.localStorage.getItem("hwstudio-prototype-state") ?? "{}");
+      expect(stored.galleries).toHaveLength(2);
+      expect(stored.galleries[1]).toMatchObject({
+        title: "Senior Portrait Preview",
+        slug: "senior-portrait-preview",
+        eventDate: "2026-08-14",
+        passcode: "senior2026",
+        fullDownloadUrl: "https://drive.google.com/drive/folders/1folderABCdef",
+        driveFolderId: "1folderABCdef",
+        displayOrder: 2,
+        status: "active",
+        isListed: true,
+        requiresApprovedEmail: true
+      });
+    });
+  });
+
   it("adds and removes approved emails", async () => {
     renderAdminGalleryPage();
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
-import { isGoogleDriveFolderUrl, normalizePhotoUrl } from "@/lib/google-drive";
+import { extractGoogleDriveFolderId, isGoogleDriveFolderUrl, normalizePhotoUrl } from "@/lib/google-drive";
 import { usePrototypeStore } from "@/lib/prototype-store";
 import type { Gallery } from "@/lib/types";
 
@@ -19,6 +19,13 @@ type GalleryFormValues = Pick<
   | "requiresApprovedEmail"
 >;
 
+type NewGalleryFormValues = {
+  title: string;
+  eventDate: string;
+  passcode: string;
+  fullDownloadUrl: string;
+};
+
 function getGalleryFormValues(gallery: Gallery): GalleryFormValues {
   return {
     title: gallery.title,
@@ -33,19 +40,57 @@ function getGalleryFormValues(gallery: Gallery): GalleryFormValues {
   };
 }
 
+function createSlug(title: string, existingSlugs: string[]) {
+  const baseSlug =
+    title
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "gallery";
+
+  let slug = baseSlug;
+  let suffix = 2;
+  while (existingSlugs.includes(slug)) {
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return slug;
+}
+
 export default function AdminGalleryPage() {
   const { state, dispatch } = usePrototypeStore();
-  const gallery = state.galleries[0];
+  const [selectedGalleryId, setSelectedGalleryId] = useState(state.galleries[0]?.id ?? "");
+  const gallery =
+    state.galleries.find((item) => item.id === selectedGalleryId) ?? state.galleries[0] ?? null;
   const [values, setValues] = useState<GalleryFormValues | null>(gallery ? getGalleryFormValues(gallery) : null);
+  const [newGalleryValues, setNewGalleryValues] = useState<NewGalleryFormValues>({
+    title: "",
+    eventDate: "",
+    passcode: "",
+    fullDownloadUrl: ""
+  });
   const [email, setEmail] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
 
   useEffect(() => {
+    if (!selectedGalleryId && state.galleries[0]) {
+      setSelectedGalleryId(state.galleries[0].id);
+      return;
+    }
+
+    if (selectedGalleryId && !state.galleries.some((item) => item.id === selectedGalleryId) && state.galleries[0]) {
+      setSelectedGalleryId(state.galleries[0].id);
+      return;
+    }
+
     if (gallery) {
       setValues(getGalleryFormValues(gallery));
+    } else {
+      setValues(null);
     }
-  }, [gallery]);
+  }, [gallery, selectedGalleryId, state.galleries]);
 
   const approvedEmails = useMemo(
     () => (gallery ? state.approvedEmails.filter((approvedEmail) => approvedEmail.galleryId === gallery.id) : []),
@@ -63,6 +108,55 @@ export default function AdminGalleryPage() {
 
   function updateField(field: keyof GalleryFormValues, value: string | boolean) {
     setValues((currentValues) => (currentValues ? { ...currentValues, [field]: value } : currentValues));
+  }
+
+  function updateNewGalleryField(field: keyof NewGalleryFormValues, value: string) {
+    setNewGalleryValues((currentValues) => ({ ...currentValues, [field]: value }));
+  }
+
+  function createGallery(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const title = newGalleryValues.title.trim();
+    const eventDate = newGalleryValues.eventDate;
+    const passcode = newGalleryValues.passcode.trim();
+    const fullDownloadUrl = newGalleryValues.fullDownloadUrl.trim();
+    if (!title || !eventDate || !passcode || !fullDownloadUrl) {
+      return;
+    }
+
+    const timestamp = Date.now();
+    const nextDisplayOrder =
+      state.galleries.length === 0 ? 1 : Math.max(...state.galleries.map((item) => item.displayOrder)) + 1;
+    const slug = createSlug(
+      title,
+      state.galleries.map((item) => item.slug)
+    );
+    const newGallery: Gallery = {
+      id: `gallery-${timestamp}`,
+      title,
+      slug,
+      eventDate,
+      description: "A new client gallery ready for photos and access settings.",
+      coverPhotoId: "",
+      isListed: true,
+      displayOrder: nextDisplayOrder,
+      passcode,
+      requiresApprovedEmail: true,
+      expirationDate: "2099-12-31",
+      driveFolderId: extractGoogleDriveFolderId(fullDownloadUrl) ?? "",
+      fullDownloadUrl,
+      status: "active"
+    };
+
+    dispatch({ type: "gallery:add", gallery: newGallery });
+    setSelectedGalleryId(newGallery.id);
+    setNewGalleryValues({
+      title: "",
+      eventDate: "",
+      passcode: "",
+      fullDownloadUrl: ""
+    });
+    setStatusMessage("Gallery created.");
   }
 
   function saveGallery(event: React.FormEvent<HTMLFormElement>) {
@@ -151,6 +245,72 @@ export default function AdminGalleryPage() {
           {statusMessage}
         </p>
       ) : null}
+      <section className="admin-panel admin-gallery-management">
+        <div>
+          <h2>Galleries</h2>
+          <div className="admin-gallery-selector" aria-label="Gallery selector">
+            {state.galleries
+              .slice()
+              .sort((first, second) => first.displayOrder - second.displayOrder)
+              .map((item) => (
+                <button
+                  key={item.id}
+                  className={item.id === gallery.id ? "text-button selected-button" : "text-button"}
+                  type="button"
+                  aria-pressed={item.id === gallery.id}
+                  onClick={() => {
+                    setSelectedGalleryId(item.id);
+                    setStatusMessage(`Editing ${item.title}.`);
+                  }}
+                >
+                  {item.title}
+                </button>
+              ))}
+          </div>
+        </div>
+        <form className="admin-form new-gallery-form" onSubmit={createGallery}>
+          <h2>New gallery</h2>
+          <label>
+            New gallery title
+            <input
+              value={newGalleryValues.title}
+              onChange={(event) => updateNewGalleryField("title", event.target.value)}
+              required
+            />
+          </label>
+          <div className="admin-two-column">
+            <label>
+              New gallery event date
+              <input
+                type="date"
+                value={newGalleryValues.eventDate}
+                onChange={(event) => updateNewGalleryField("eventDate", event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              New gallery passcode
+              <input
+                value={newGalleryValues.passcode}
+                onChange={(event) => updateNewGalleryField("passcode", event.target.value)}
+                required
+              />
+            </label>
+          </div>
+          <label>
+            New gallery full download URL
+            <input
+              type="url"
+              value={newGalleryValues.fullDownloadUrl}
+              onChange={(event) => updateNewGalleryField("fullDownloadUrl", event.target.value)}
+              required
+            />
+          </label>
+          <button className="dark-button" type="submit">
+            Create gallery
+          </button>
+        </form>
+      </section>
       <div className="admin-editor-grid">
         <form className="admin-panel admin-form" onSubmit={saveGallery}>
           <h2>Gallery details</h2>
