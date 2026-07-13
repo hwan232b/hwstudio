@@ -15,7 +15,7 @@ function parseFolder(raw: string): string {
   return isGoogleDriveFolderUrl(value) ? extractGoogleDriveFolderId(value) ?? value : value;
 }
 
-export const maxDuration = 800; // allow long edits (local dev)
+// AI editing runs locally (Python), not on the deployed host, so no long duration needed here.
 
 export async function POST(request: Request) {
   const supabase = await createClient();
