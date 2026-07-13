@@ -1,497 +1,346 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
-import { extractGoogleDriveFolderId, isGoogleDriveFolderUrl, normalizePhotoUrl } from "@/lib/google-drive";
-import { usePrototypeStore } from "@/lib/prototype-store";
-import type { Gallery } from "@/lib/types";
+import { extractGoogleDriveFolderId, isGoogleDriveFolderUrl } from "@/lib/google-drive";
+import { createClient } from "@/lib/supabase/client";
 
-type GalleryFormValues = Pick<
-  Gallery,
-  | "title"
-  | "slug"
-  | "eventDate"
-  | "description"
-  | "passcode"
-  | "expirationDate"
-  | "fullDownloadUrl"
-  | "isListed"
-  | "requiresApprovedEmail"
->;
-
-type NewGalleryFormValues = {
+type Gallery = {
+  id: string;
   title: string;
-  eventDate: string;
-  passcode: string;
-  fullDownloadUrl: string;
+  slug: string;
+  event_date: string | null;
+  description: string | null;
+  passcode: string | null;
+  requires_approved_email: boolean;
+  expiration_date: string | null;
+  is_listed: boolean;
+  display_order: number;
+  drive_folder_id: string | null;
+  full_download_url: string | null;
 };
 
-function getGalleryFormValues(gallery: Gallery): GalleryFormValues {
-  return {
-    title: gallery.title,
-    slug: gallery.slug,
-    eventDate: gallery.eventDate,
-    description: gallery.description,
-    passcode: gallery.passcode,
-    expirationDate: gallery.expirationDate,
-    fullDownloadUrl: gallery.fullDownloadUrl,
-    isListed: gallery.isListed,
-    requiresApprovedEmail: gallery.requiresApprovedEmail
-  };
+type ApprovedEmail = { id: string; gallery_id: string; email: string };
+
+function slugify(value: string): string {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+function parseFolder(raw: string): string {
+  const value = raw.trim();
+  return isGoogleDriveFolderUrl(value) ? extractGoogleDriveFolderId(value) ?? value : value;
 }
 
-function createSlug(title: string, existingSlugs: string[]) {
-  const baseSlug =
-    title
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "gallery";
+function GalleryEditor({
+  gallery,
+  onSave,
+  onDelete,
+}: {
+  gallery: Gallery;
+  onSave: (patch: Partial<Gallery>) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const [form, setForm] = useState({
+    title: gallery.title,
+    slug: gallery.slug,
+    event_date: gallery.event_date ?? "",
+    description: gallery.description ?? "",
+    passcode: gallery.passcode ?? "",
+    requires_approved_email: gallery.requires_approved_email,
+    expiration_date: gallery.expiration_date ?? "",
+    is_listed: gallery.is_listed,
+    drive_folder_id: gallery.drive_folder_id ?? "",
+    full_download_url: gallery.full_download_url ?? "",
+  });
 
-  let slug = baseSlug;
-  let suffix = 2;
-  while (existingSlugs.includes(slug)) {
-    slug = `${baseSlug}-${suffix}`;
-    suffix += 1;
+  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
   }
 
-  return slug;
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await onSave({
+      title: form.title,
+      slug: slugify(form.slug || form.title),
+      event_date: form.event_date || null,
+      description: form.description,
+      passcode: form.passcode,
+      requires_approved_email: form.requires_approved_email,
+      expiration_date: form.expiration_date || null,
+      is_listed: form.is_listed,
+      drive_folder_id: parseFolder(form.drive_folder_id),
+      full_download_url: form.full_download_url,
+    });
+  }
+
+  return (
+    <form className="admin-panel admin-form" onSubmit={save}>
+      <h2>Edit gallery</h2>
+      <label>
+        Title
+        <input value={form.title} onChange={(e) => set("title", e.target.value)} />
+      </label>
+      <div className="admin-two-column">
+        <label>
+          URL slug
+          <input value={form.slug} onChange={(e) => set("slug", e.target.value)} />
+        </label>
+        <label>
+          Event date
+          <input type="date" value={form.event_date} onChange={(e) => set("event_date", e.target.value)} />
+        </label>
+      </div>
+      <label>
+        Description
+        <textarea rows={2} value={form.description} onChange={(e) => set("description", e.target.value)} />
+      </label>
+      <label>
+        Google Drive folder (link or ID)
+        <input
+          value={form.drive_folder_id}
+          onChange={(e) => set("drive_folder_id", e.target.value)}
+          placeholder="https://drive.google.com/drive/folders/…"
+        />
+      </label>
+      <div className="admin-two-column">
+        <label>
+          Passcode
+          <input value={form.passcode} onChange={(e) => set("passcode", e.target.value)} />
+        </label>
+        <label>
+          Expiration date (optional)
+          <input type="date" value={form.expiration_date} onChange={(e) => set("expiration_date", e.target.value)} />
+        </label>
+      </div>
+      <label>
+        Full-gallery download link (optional)
+        <input value={form.full_download_url} onChange={(e) => set("full_download_url", e.target.value)} />
+      </label>
+      <label className="admin-check">
+        <input type="checkbox" checked={form.is_listed} onChange={(e) => set("is_listed", e.target.checked)} />
+        Show in the public client directory
+      </label>
+      <label className="admin-check">
+        <input
+          type="checkbox"
+          checked={form.requires_approved_email}
+          onChange={(e) => set("requires_approved_email", e.target.checked)}
+        />
+        Also require an approved email
+      </label>
+      <div className="admin-photo-actions">
+        <button className="dark-button" type="submit">
+          Save gallery
+        </button>
+        <button className="text-button" type="button" onClick={onDelete}>
+          Delete gallery
+        </button>
+      </div>
+    </form>
+  );
 }
 
 export default function AdminGalleryPage() {
-  const { state, dispatch } = usePrototypeStore();
-  const [selectedGalleryId, setSelectedGalleryId] = useState(state.galleries[0]?.id ?? "");
-  const gallery =
-    state.galleries.find((item) => item.id === selectedGalleryId) ?? state.galleries[0] ?? null;
-  const [values, setValues] = useState<GalleryFormValues | null>(gallery ? getGalleryFormValues(gallery) : null);
-  const [newGalleryValues, setNewGalleryValues] = useState<NewGalleryFormValues>({
-    title: "",
-    eventDate: "",
-    passcode: "",
-    fullDownloadUrl: ""
-  });
-  const [email, setEmail] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
+  const [galleries, setGalleries] = useState<Gallery[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [emails, setEmails] = useState<ApprovedEmail[]>([]);
+  const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [newTitle, setNewTitle] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [newFolder, setNewFolder] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+
+  const loadGalleries = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("galleries").select("*").order("display_order");
+    const rows = (data as Gallery[]) ?? [];
+    setGalleries(rows);
+    setLoading(false);
+    return rows;
+  }, []);
+
+  const loadEmails = useCallback(async (galleryId: string) => {
+    const supabase = createClient();
+    const { data } = await supabase.from("approved_emails").select("*").eq("gallery_id", galleryId);
+    setEmails((data as ApprovedEmail[]) ?? []);
+  }, []);
 
   useEffect(() => {
-    if (!selectedGalleryId && state.galleries[0]) {
-      setSelectedGalleryId(state.galleries[0].id);
+    loadGalleries().then((rows) => {
+      setSelectedId((current) => current ?? rows[0]?.id ?? null);
+    });
+  }, [loadGalleries]);
+
+  useEffect(() => {
+    if (selectedId) loadEmails(selectedId);
+  }, [selectedId, loadEmails]);
+
+  const selected = galleries.find((g) => g.id === selectedId) ?? null;
+
+  async function createGallery(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const title = newTitle.trim();
+    if (!title) return;
+    const supabase = createClient();
+    const order = galleries.length ? Math.max(...galleries.map((g) => g.display_order)) + 1 : 1;
+    const { data, error } = await supabase
+      .from("galleries")
+      .insert({
+        title,
+        slug: slugify(title),
+        passcode: newPass.trim(),
+        drive_folder_id: parseFolder(newFolder),
+        display_order: order,
+      })
+      .select()
+      .single();
+    if (error) {
+      setStatus(`Couldn't create — ${error.message}`);
       return;
     }
+    setNewTitle("");
+    setNewPass("");
+    setNewFolder("");
+    await loadGalleries();
+    setSelectedId(data.id);
+    setStatus("Gallery created.");
+  }
 
-    if (selectedGalleryId && !state.galleries.some((item) => item.id === selectedGalleryId) && state.galleries[0]) {
-      setSelectedGalleryId(state.galleries[0].id);
-      return;
-    }
-
-    if (gallery) {
-      setValues(getGalleryFormValues(gallery));
+  async function saveGallery(patch: Partial<Gallery>) {
+    if (!selected) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("galleries").update(patch).eq("id", selected.id);
+    if (error) {
+      setStatus(`Couldn't save — ${error.message}`);
     } else {
-      setValues(null);
+      setStatus("Gallery saved.");
+      loadGalleries();
     }
-  }, [gallery, selectedGalleryId, state.galleries]);
-
-  const approvedEmails = useMemo(
-    () => (gallery ? state.approvedEmails.filter((approvedEmail) => approvedEmail.galleryId === gallery.id) : []),
-    [gallery, state.approvedEmails]
-  );
-  const photos = useMemo(
-    () =>
-      gallery
-        ? state.galleryPhotos
-            .filter((photo) => photo.galleryId === gallery.id)
-            .sort((first, second) => first.displayOrder - second.displayOrder)
-        : [],
-    [gallery, state.galleryPhotos]
-  );
-
-  function updateField(field: keyof GalleryFormValues, value: string | boolean) {
-    setValues((currentValues) => (currentValues ? { ...currentValues, [field]: value } : currentValues));
   }
 
-  function updateNewGalleryField(field: keyof NewGalleryFormValues, value: string) {
-    setNewGalleryValues((currentValues) => ({ ...currentValues, [field]: value }));
+  async function deleteGallery() {
+    if (!selected) return;
+    const supabase = createClient();
+    await supabase.from("galleries").delete().eq("id", selected.id);
+    const rows = await loadGalleries();
+    setSelectedId(rows[0]?.id ?? null);
+    setStatus("Gallery deleted.");
   }
 
-  function createGallery(event: React.FormEvent<HTMLFormElement>) {
+  async function addEmail(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const title = newGalleryValues.title.trim();
-    const eventDate = newGalleryValues.eventDate;
-    const passcode = newGalleryValues.passcode.trim();
-    const fullDownloadUrl = newGalleryValues.fullDownloadUrl.trim();
-    if (!title || !eventDate || !passcode || !fullDownloadUrl) {
-      return;
-    }
-
-    const timestamp = Date.now();
-    const nextDisplayOrder =
-      state.galleries.length === 0 ? 1 : Math.max(...state.galleries.map((item) => item.displayOrder)) + 1;
-    const slug = createSlug(
-      title,
-      state.galleries.map((item) => item.slug)
-    );
-    const newGallery: Gallery = {
-      id: `gallery-${timestamp}`,
-      title,
-      slug,
-      eventDate,
-      description: "A new client gallery ready for photos and access settings.",
-      coverPhotoId: "",
-      isListed: true,
-      displayOrder: nextDisplayOrder,
-      passcode,
-      requiresApprovedEmail: true,
-      expirationDate: "2099-12-31",
-      driveFolderId: extractGoogleDriveFolderId(fullDownloadUrl) ?? "",
-      fullDownloadUrl,
-      status: "active"
-    };
-
-    dispatch({ type: "gallery:add", gallery: newGallery });
-    setSelectedGalleryId(newGallery.id);
-    setNewGalleryValues({
-      title: "",
-      eventDate: "",
-      passcode: "",
-      fullDownloadUrl: ""
-    });
-    setStatusMessage("Gallery created.");
+    if (!selected) return;
+    const email = newEmail.trim();
+    if (!email) return;
+    const supabase = createClient();
+    await supabase.from("approved_emails").insert({ gallery_id: selected.id, email });
+    setNewEmail("");
+    loadEmails(selected.id);
+    setStatus("Approved email added.");
   }
 
-  function saveGallery(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!gallery || !values) {
-      return;
-    }
-
-    dispatch({
-      type: "gallery:update",
-      gallery: {
-        ...gallery,
-        ...values,
-        driveFolderId: extractGoogleDriveFolderId(values.fullDownloadUrl) ?? gallery.driveFolderId,
-        expirationDate: values.expirationDate?.trim() ? values.expirationDate : null
-      }
-    });
-    setStatusMessage("Gallery saved.");
+  async function removeEmail(id: string) {
+    const supabase = createClient();
+    await supabase.from("approved_emails").delete().eq("id", id);
+    if (selected) loadEmails(selected.id);
   }
 
-  function addApprovedEmail(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedEmail = email.trim();
-    if (!gallery || !trimmedEmail) {
-      return;
-    }
-
-    dispatch({
-      type: "approved-email:add",
-      email: {
-        id: `approved-email-${Date.now()}`,
-        galleryId: gallery.id,
-        email: trimmedEmail,
-        label: "Manual access"
-      }
-    });
-    setEmail("");
-    setStatusMessage("Email added.");
-  }
-
-  function addPhoto(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedUrl = photoUrl.trim();
-    if (!gallery || !trimmedUrl) {
-      return;
-    }
-    if (isGoogleDriveFolderUrl(trimmedUrl)) {
-      setStatusMessage("Folder links cannot preview a single photo yet. Paste an individual Google Drive file link.");
-      return;
-    }
-
-    const nextDisplayOrder = photos.length === 0 ? 1 : Math.max(...photos.map((photo) => photo.displayOrder)) + 1;
-    const timestamp = Date.now();
-    const normalizedPhoto = normalizePhotoUrl(trimmedUrl);
-    dispatch({
-      type: "gallery-photo:add",
-      photo: {
-        id: `gallery-photo-${timestamp}`,
-        galleryId: gallery.id,
-        driveFileId: normalizedPhoto.driveFileId ?? `manual-drive-file-${timestamp}`,
-        previewUrl: normalizedPhoto.previewUrl,
-        downloadUrl: normalizedPhoto.downloadUrl,
-        alt: `Gallery photo ${nextDisplayOrder}`,
-        displayOrder: nextDisplayOrder,
-        isVisible: true,
-        isPortfolioEligible: true
-      }
-    });
-    setPhotoUrl("");
-    setStatusMessage("Photo added.");
-  }
-
-  if (!gallery || !values) {
+  if (loading) {
     return (
-      <AdminShell title="Gallery">
-        <section className="admin-empty">
-          <p>No gallery is available.</p>
-        </section>
+      <AdminShell title="Galleries">
+        <p className="admin-empty">Loading…</p>
       </AdminShell>
     );
   }
 
   return (
-    <AdminShell title="Gallery">
-      {statusMessage ? (
+    <AdminShell title="Galleries">
+      {status ? (
         <p className="admin-status" role="status">
-          {statusMessage}
+          {status}
         </p>
       ) : null}
-      <section className="admin-panel admin-gallery-management">
+      <div className="admin-gallery-management">
         <div>
-          <h2>Galleries</h2>
-          <div className="admin-gallery-selector" aria-label="Gallery selector">
-            {state.galleries
-              .slice()
-              .sort((first, second) => first.displayOrder - second.displayOrder)
-              .map((item) => (
-                <button
-                  key={item.id}
-                  className={item.id === gallery.id ? "text-button selected-button" : "text-button"}
-                  type="button"
-                  aria-pressed={item.id === gallery.id}
-                  onClick={() => {
-                    setSelectedGalleryId(item.id);
-                    setStatusMessage(`Editing ${item.title}.`);
-                  }}
-                >
-                  {item.title}
-                </button>
-              ))}
-          </div>
-        </div>
-        <form className="admin-form new-gallery-form" onSubmit={createGallery}>
-          <h2>New gallery</h2>
-          <label>
-            New gallery title
-            <input
-              value={newGalleryValues.title}
-              onChange={(event) => updateNewGalleryField("title", event.target.value)}
-              required
-            />
-          </label>
-          <div className="admin-two-column">
+          <form className="admin-panel admin-form new-gallery-form" onSubmit={createGallery}>
+            <h2>New gallery</h2>
             <label>
-              New gallery event date
-              <input
-                type="date"
-                value={newGalleryValues.eventDate}
-                onChange={(event) => updateNewGalleryField("eventDate", event.target.value)}
-                required
-              />
+              Title
+              <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Smith Wedding" />
             </label>
             <label>
-              New gallery passcode
-              <input
-                value={newGalleryValues.passcode}
-                onChange={(event) => updateNewGalleryField("passcode", event.target.value)}
-                required
-              />
+              Passcode
+              <input value={newPass} onChange={(e) => setNewPass(e.target.value)} />
             </label>
-          </div>
-          <label>
-            New gallery full download URL
-            <input
-              type="url"
-              value={newGalleryValues.fullDownloadUrl}
-              onChange={(event) => updateNewGalleryField("fullDownloadUrl", event.target.value)}
-              required
-            />
-          </label>
-          <button className="dark-button" type="submit">
-            Create gallery
-          </button>
-        </form>
-      </section>
-      <div className="admin-editor-grid">
-        <form className="admin-panel admin-form" onSubmit={saveGallery}>
-          <h2>Gallery details</h2>
-          <label>
-            Title
-            <input value={values.title} onChange={(event) => updateField("title", event.target.value)} required />
-          </label>
-          <label>
-            Slug
-            <input value={values.slug} onChange={(event) => updateField("slug", event.target.value)} required />
-          </label>
-          <label>
-            Event date
-            <input
-              type="date"
-              value={values.eventDate}
-              onChange={(event) => updateField("eventDate", event.target.value)}
-            />
-          </label>
-          <label>
-            Description
-            <textarea
-              rows={4}
-              value={values.description}
-              onChange={(event) => updateField("description", event.target.value)}
-            />
-          </label>
-          <label>
-            Passcode
-            <input value={values.passcode} onChange={(event) => updateField("passcode", event.target.value)} />
-          </label>
-          <label>
-            Expiration date
-            <input
-              type="date"
-              value={values.expirationDate ?? ""}
-              onChange={(event) => updateField("expirationDate", event.target.value)}
-            />
-          </label>
-          <label>
-            Full download URL
-            <input
-              type="url"
-              value={values.fullDownloadUrl}
-              onChange={(event) => updateField("fullDownloadUrl", event.target.value)}
-            />
-          </label>
-          <label className="admin-check">
-            <input
-              type="checkbox"
-              checked={values.isListed}
-              onChange={(event) => updateField("isListed", event.target.checked)}
-            />
-            Listed publicly
-          </label>
-          <label className="admin-check">
-            <input
-              type="checkbox"
-              checked={values.requiresApprovedEmail}
-              onChange={(event) => updateField("requiresApprovedEmail", event.target.checked)}
-            />
-            Requires approved email
-          </label>
-          <button className="dark-button" type="submit">
-            Save gallery
-          </button>
-        </form>
-
-        <section className="admin-panel">
-          <h2>Approved emails</h2>
-          <form className="admin-inline-form" onSubmit={addApprovedEmail}>
             <label>
-              Add approved email
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="client@example.com"
-              />
+              Google Drive folder (link or ID)
+              <input value={newFolder} onChange={(e) => setNewFolder(e.target.value)} />
             </label>
-            <button className="text-button" type="submit">
-              Add email
+            <button className="dark-button" type="submit">
+              Create gallery
             </button>
           </form>
-          <ul className="admin-list">
-            {approvedEmails.map((approvedEmail) => (
-              <li key={approvedEmail.id}>
-                <span>{approvedEmail.email}</span>
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={() => {
-                    dispatch({ type: "approved-email:remove", emailId: approvedEmail.id });
-                    setStatusMessage("Email removed.");
-                  }}
-                >
-                  Remove email
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+
+          <section className="admin-panel">
+            <h2>Your galleries</h2>
+            {galleries.length > 0 ? (
+              <div className="admin-gallery-selector">
+                {galleries.map((gallery) => (
+                  <button
+                    key={gallery.id}
+                    type="button"
+                    className={`text-button${gallery.id === selectedId ? " selected-button" : ""}`}
+                    onClick={() => setSelectedId(gallery.id)}
+                  >
+                    {gallery.title}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="admin-empty">No galleries yet — create your first above.</p>
+            )}
+            <p className="admin-hint">
+              Share each gallery&apos;s Drive folder (Viewer) with
+              <br />
+              <strong>hwstudio@photo-site-501601.iam.gserviceaccount.com</strong>
+            </p>
+          </section>
+        </div>
+
+        {selected ? (
+          <div>
+            <GalleryEditor key={selected.id} gallery={selected} onSave={saveGallery} onDelete={deleteGallery} />
+            {selected.requires_approved_email ? (
+              <section className="admin-panel admin-photo-panel">
+                <h2>Approved emails</h2>
+                <form className="admin-inline-form" onSubmit={addEmail}>
+                  <label>
+                    Add an approved email
+                    <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+                  </label>
+                  <button className="text-button" type="submit">
+                    Add
+                  </button>
+                </form>
+                {emails.length > 0 ? (
+                  <ul className="admin-list">
+                    {emails.map((entry) => (
+                      <li key={entry.id}>
+                        <span>{entry.email}</span>
+                        <button className="text-button" type="button" onClick={() => removeEmail(entry.id)}>
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="admin-empty">No approved emails yet.</p>
+                )}
+              </section>
+            ) : null}
+          </div>
+        ) : null}
       </div>
-
-      <section className="admin-panel admin-photo-panel">
-        <div className="admin-section-heading">
-          <h2>Photos</h2>
-          <form className="admin-inline-form" onSubmit={addPhoto}>
-            <label>
-              Add photo URL
-              <input
-                type="url"
-                value={photoUrl}
-                onChange={(event) => setPhotoUrl(event.target.value)}
-                placeholder="Direct image URL or Google Drive file link"
-              />
-            </label>
-            <button className="text-button" type="submit">
-              Add photo
-            </button>
-          </form>
-        </div>
-        <ul className="admin-photo-list">
-          {photos.map((photo) => (
-            <li key={photo.id}>
-              <img src={photo.previewUrl} alt={photo.alt} />
-              <div>
-                <strong>{photo.alt}</strong>
-                <span>{photo.previewUrl}</span>
-              </div>
-              <div className="admin-photo-actions">
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={() => {
-                    dispatch({ type: "gallery-photo:move", photoId: photo.id, direction: "up" });
-                    setStatusMessage("Photo moved up.");
-                  }}
-                >
-                  Move up
-                </button>
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={() => {
-                    dispatch({ type: "gallery-photo:move", photoId: photo.id, direction: "down" });
-                    setStatusMessage("Photo moved down.");
-                  }}
-                >
-                  Move down
-                </button>
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={() => {
-                    dispatch({
-                      type: "portfolio:promote-gallery-photo",
-                      photoId: photo.id,
-                      categoryIds: ["cat-graduation"]
-                    });
-                    setStatusMessage("Photo promoted to portfolio.");
-                  }}
-                >
-                  Promote to graduation
-                </button>
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={() => {
-                    dispatch({ type: "gallery-photo:remove", photoId: photo.id });
-                    setStatusMessage("Photo removed.");
-                  }}
-                >
-                  Remove photo
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
     </AdminShell>
   );
 }

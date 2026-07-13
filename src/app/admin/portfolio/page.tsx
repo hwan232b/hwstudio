@@ -1,180 +1,81 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
-import { isGoogleDriveFolderUrl, normalizePhotoUrl } from "@/lib/google-drive";
-import { usePrototypeStore } from "@/lib/prototype-store";
-import type { PortfolioCategory, PortfolioPhoto } from "@/lib/types";
+import { extractGoogleDriveFolderId, isGoogleDriveFolderUrl } from "@/lib/google-drive";
+import { createClient } from "@/lib/supabase/client";
 
-type CategoryEditorProps = {
-  category: PortfolioCategory;
-  portfolioPhotos: PortfolioPhoto[];
-  onStatusChange: (message: string) => void;
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  display_order: number;
+  is_visible: boolean;
+  drive_folder_id: string | null;
 };
 
-type CategoryEditorContent = Pick<PortfolioCategory, "id" | "name" | "description" | "isVisible">;
+function parseFolder(raw: string): string {
+  const value = raw.trim();
+  return isGoogleDriveFolderUrl(value) ? extractGoogleDriveFolderId(value) ?? value : value;
+}
 
-function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryEditorProps) {
-  const { dispatch } = usePrototypeStore();
+function CategoryRow({
+  category,
+  onSave,
+  onMove,
+}: {
+  category: Category;
+  onSave: (id: string, patch: Partial<Category>) => Promise<void>;
+  onMove: (category: Category, direction: "up" | "down") => Promise<void>;
+}) {
   const [name, setName] = useState(category.name);
-  const [description, setDescription] = useState(category.description);
-  const [isVisible, setIsVisible] = useState(category.isVisible);
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [photoAlt, setPhotoAlt] = useState("");
-  const categoryPhotos = useMemo(
-    () =>
-      portfolioPhotos
-        .filter((photo) => photo.categoryIds.includes(category.id))
-        .sort((first, second) => first.displayOrder - second.displayOrder),
-    [category.id, portfolioPhotos]
-  );
-  const lastSyncedContent = useRef<CategoryEditorContent>({
-    id: category.id,
-    name: category.name,
-    description: category.description,
-    isVisible: category.isVisible
-  });
+  const [description, setDescription] = useState(category.description ?? "");
+  const [isVisible, setIsVisible] = useState(category.is_visible);
+  const [folder, setFolder] = useState(category.drive_folder_id ?? "");
 
-  useEffect(() => {
-    const previousContent = lastSyncedContent.current;
-    const localFieldsMatchPreviousContent =
-      name === previousContent.name &&
-      description === previousContent.description &&
-      isVisible === previousContent.isVisible;
-    const categoryIdChanged = category.id !== previousContent.id;
-
-    if (categoryIdChanged || localFieldsMatchPreviousContent) {
-      setName(category.name);
-      setDescription(category.description);
-      setIsVisible(category.isVisible);
-    }
-
-    lastSyncedContent.current = {
-      id: category.id,
-      name: category.name,
-      description: category.description,
-      isVisible: category.isVisible
-    };
-  }, [category.description, category.id, category.isVisible, category.name, description, isVisible, name]);
-
-  function saveSection(event: React.FormEvent<HTMLFormElement>) {
+  async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    dispatch({
-      type: "portfolio-category:update",
-      category: {
-        ...category,
-        name,
-        description,
-        isVisible
-      }
+    await onSave(category.id, {
+      name,
+      description,
+      is_visible: isVisible,
+      drive_folder_id: parseFolder(folder),
     });
-    onStatusChange("Portfolio section saved.");
-  }
-
-  function addPhoto(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedUrl = photoUrl.trim();
-    const trimmedAlt = photoAlt.trim();
-    if (!trimmedUrl) {
-      return;
-    }
-    if (isGoogleDriveFolderUrl(trimmedUrl)) {
-      onStatusChange("Folder links cannot preview a single photo yet. Paste an individual Google Drive file link.");
-      return;
-    }
-
-    const timestamp = Date.now();
-    const nextDisplayOrder =
-      portfolioPhotos.length === 0 ? 1 : Math.max(...portfolioPhotos.map((photo) => photo.displayOrder)) + 1;
-    const normalizedPhoto = normalizePhotoUrl(trimmedUrl);
-    const photoAltText = trimmedAlt || `${category.name} portfolio photo ${nextDisplayOrder}`;
-    dispatch({
-      type: "portfolio-photo:add",
-      photo: {
-        id: `portfolio-photo-${timestamp}`,
-        sourceGalleryPhotoId: null,
-        previewUrl: normalizedPhoto.previewUrl,
-        alt: photoAltText,
-        categoryIds: [category.id],
-        displayOrder: nextDisplayOrder,
-        isFeatured: category.id === "cat-featured"
-      }
-    });
-    setPhotoUrl("");
-    setPhotoAlt("");
-    onStatusChange("Portfolio photo added.");
   }
 
   return (
     <li className="portfolio-category-editor" aria-label={`Category: ${category.name}`}>
-      <form className="admin-form" onSubmit={saveSection}>
+      <form className="admin-form" onSubmit={save}>
         <label>
           Section name
           <input value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         <label>
           Section description
-          <textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} />
+          <textarea rows={2} value={description} onChange={(event) => setDescription(event.target.value)} />
+        </label>
+        <label>
+          Google Drive folder (link or ID)
+          <input
+            value={folder}
+            onChange={(event) => setFolder(event.target.value)}
+            placeholder="https://drive.google.com/drive/folders/…"
+          />
         </label>
         <label className="admin-check">
           <input type="checkbox" checked={isVisible} onChange={(event) => setIsVisible(event.target.checked)} />
           Visible on portfolio
         </label>
         <button className="text-button" type="submit">
-          Save section
+          Save {category.name}
         </button>
       </form>
-      <form className="admin-inline-form portfolio-section-photo-form" onSubmit={addPhoto}>
-        <label>
-          Photo URL
-          <input
-            type="url"
-            value={photoUrl}
-            onChange={(event) => setPhotoUrl(event.target.value)}
-            placeholder="Direct image URL or Google Drive file link"
-          />
-        </label>
-        <label>
-          Alt text optional
-          <input value={photoAlt} onChange={(event) => setPhotoAlt(event.target.value)} />
-        </label>
-        <button className="text-button" type="submit">
-          Add photo to {category.name}
-        </button>
-      </form>
-      {categoryPhotos.length > 0 ? (
-        <div className="portfolio-section-photo-preview" aria-label={`${category.name} portfolio photos`}>
-          {categoryPhotos.map((photo) => (
-            <figure key={photo.id}>
-              <img src={photo.previewUrl} alt={photo.alt} />
-              <figcaption>{photo.alt}</figcaption>
-            </figure>
-          ))}
-        </div>
-      ) : (
-        <p className="admin-empty portfolio-section-empty">No photos in this section yet.</p>
-      )}
       <div className="admin-photo-actions">
-        <button
-          className="text-button"
-          type="button"
-          aria-label={`Move ${category.name} up`}
-          onClick={() => {
-            dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "up" });
-            onStatusChange("Portfolio category moved.");
-          }}
-        >
+        <button className="text-button" type="button" onClick={() => onMove(category, "up")}>
           Move up
         </button>
-        <button
-          className="text-button"
-          type="button"
-          aria-label={`Move ${category.name} down`}
-          onClick={() => {
-            dispatch({ type: "portfolio-category:move", categoryId: category.id, direction: "down" });
-            onStatusChange("Portfolio category moved.");
-          }}
-        >
+        <button className="text-button" type="button" onClick={() => onMove(category, "down")}>
           Move down
         </button>
       </div>
@@ -183,54 +84,93 @@ function CategoryEditor({ category, portfolioPhotos, onStatusChange }: CategoryE
 }
 
 export default function AdminPortfolioPage() {
-  const { state, dispatch } = usePrototypeStore();
-  const [statusMessage, setStatusMessage] = useState("");
-  const [portfolioEyebrow, setPortfolioEyebrow] = useState(state.portfolioSettings.eyebrow);
-  const [portfolioHeading, setPortfolioHeading] = useState(state.portfolioSettings.heading);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [eyebrow, setEyebrow] = useState("");
+  const [heading, setHeading] = useState("");
+  const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const [{ data: settings }, { data: cats }] = await Promise.all([
+      supabase.from("portfolio_settings").select("*").eq("id", "main").maybeSingle(),
+      supabase.from("portfolio_categories").select("*").order("display_order"),
+    ]);
+    if (settings) {
+      setEyebrow(settings.eyebrow ?? "");
+      setHeading(settings.heading ?? "");
+    }
+    setCategories((cats as Category[]) ?? []);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
-    setPortfolioEyebrow(state.portfolioSettings.eyebrow);
-    setPortfolioHeading(state.portfolioSettings.heading);
-  }, [state.portfolioSettings]);
+    load();
+  }, [load]);
 
-  const categories = useMemo(
-    () => [...state.portfolioCategories].sort((first, second) => first.displayOrder - second.displayOrder),
-    [state.portfolioCategories]
-  );
-  const photos = useMemo(
-    () => [...state.portfolioPhotos].sort((first, second) => first.displayOrder - second.displayOrder),
-    [state.portfolioPhotos]
-  );
-
-  function saveIntroCopy(event: React.FormEvent<HTMLFormElement>) {
+  async function saveIntro(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    dispatch({
-      type: "portfolio-settings:update",
-      settings: {
-        eyebrow: portfolioEyebrow,
-        heading: portfolioHeading
+    const supabase = createClient();
+    const { error } = await supabase.from("portfolio_settings").update({ eyebrow, heading }).eq("id", "main");
+    setStatus(error ? `Couldn't save — ${error.message}` : "Portfolio intro saved.");
+  }
+
+  const saveCategory = useCallback(
+    async (id: string, patch: Partial<Category>) => {
+      const supabase = createClient();
+      const { error } = await supabase.from("portfolio_categories").update(patch).eq("id", id);
+      if (error) {
+        setStatus(`Couldn't save — ${error.message}`);
+      } else {
+        setStatus("Category saved. Refresh the portfolio to see it.");
+        load();
       }
-    });
-    setStatusMessage("Portfolio intro saved.");
+    },
+    [load]
+  );
+
+  const move = useCallback(
+    async (category: Category, direction: "up" | "down") => {
+      const sorted = [...categories].sort((a, b) => a.display_order - b.display_order);
+      const index = sorted.findIndex((c) => c.id === category.id);
+      const target = direction === "up" ? index - 1 : index + 1;
+      if (target < 0 || target >= sorted.length) return;
+      const a = sorted[index];
+      const b = sorted[target];
+      const supabase = createClient();
+      await supabase.from("portfolio_categories").update({ display_order: b.display_order }).eq("id", a.id);
+      await supabase.from("portfolio_categories").update({ display_order: a.display_order }).eq("id", b.id);
+      setStatus("Category reordered.");
+      load();
+    },
+    [categories, load]
+  );
+
+  if (loading) {
+    return (
+      <AdminShell title="Portfolio">
+        <p className="admin-empty">Loading…</p>
+      </AdminShell>
+    );
   }
 
   return (
     <AdminShell title="Portfolio">
-      {statusMessage ? (
+      {status ? (
         <p className="admin-status" role="status">
-          {statusMessage}
+          {status}
         </p>
       ) : null}
       <div className="admin-editor-grid">
-        <form className="admin-panel admin-form" onSubmit={saveIntroCopy}>
+        <form className="admin-panel admin-form" onSubmit={saveIntro}>
           <h2>Intro copy</h2>
           <label>
             Portfolio eyebrow
-            <input value={portfolioEyebrow} onChange={(event) => setPortfolioEyebrow(event.target.value)} />
+            <input value={eyebrow} onChange={(event) => setEyebrow(event.target.value)} />
           </label>
           <label>
             Portfolio heading
-            <textarea rows={3} value={portfolioHeading} onChange={(event) => setPortfolioHeading(event.target.value)} />
+            <textarea rows={3} value={heading} onChange={(event) => setHeading(event.target.value)} />
           </label>
           <button className="dark-button" type="submit">
             Save intro copy
@@ -239,51 +179,21 @@ export default function AdminPortfolioPage() {
 
         <section className="admin-panel">
           <h2>Categories</h2>
+          <p className="admin-hint">
+            Point each category at a Drive folder of photos. Share every folder (Viewer) with
+            <br />
+            <strong>hwstudio@photo-site-501601.iam.gserviceaccount.com</strong>
+          </p>
           {categories.length > 0 ? (
             <ul className="admin-list">
-              {categories.map((category) => (
-                <CategoryEditor
-                  key={category.id}
-                  category={category}
-                  portfolioPhotos={state.portfolioPhotos}
-                  onStatusChange={setStatusMessage}
-                />
-              ))}
+              {[...categories]
+                .sort((a, b) => a.display_order - b.display_order)
+                .map((category) => (
+                  <CategoryRow key={category.id} category={category} onSave={saveCategory} onMove={move} />
+                ))}
             </ul>
           ) : (
-            <p className="admin-empty">No portfolio categories are available.</p>
-          )}
-        </section>
-
-        <section className="admin-panel">
-          <h2>Portfolio photos</h2>
-          {photos.length > 0 ? (
-            <ul className="admin-photo-list">
-              {photos.map((photo) => (
-                <li key={photo.id} aria-label={`Portfolio photo: ${photo.alt}`}>
-                  <img src={photo.previewUrl} alt={photo.alt} />
-                  <div>
-                    <strong>{photo.alt}</strong>
-                    <span>{photo.previewUrl}</span>
-                  </div>
-                  <div className="admin-photo-actions">
-                    <button
-                      className="text-button"
-                      type="button"
-                      aria-label={`Remove ${photo.alt}`}
-                      onClick={() => {
-                        dispatch({ type: "portfolio-photo:remove", photoId: photo.id });
-                        setStatusMessage("Portfolio photo removed.");
-                      }}
-                    >
-                      Remove photo
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="admin-empty">No portfolio photos are available.</p>
+            <p className="admin-empty">No portfolio categories yet.</p>
           )}
         </section>
       </div>

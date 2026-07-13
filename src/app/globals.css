@@ -90,7 +90,7 @@ h1 {
 .portfolio-category-card img {
   width: 100%;
   aspect-ratio: 4 / 5;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
   background: var(--color-line);
 }
@@ -254,8 +254,31 @@ h1 {
 .mosaic-image {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   background: var(--color-line);
+}
+
+.mosaic-empty {
+  grid-column: 1 / -1;
+  align-self: center;
+  margin: 0;
+  padding: 40px 24px;
+  border: 1px dashed var(--color-line);
+  color: var(--color-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.admin-hint {
+  margin: 14px 0 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.admin-hint strong {
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
 }
 
 .mosaic-image-1 {
@@ -328,7 +351,13 @@ h1 {
   transform: translateY(1px);
 }
 
-.photo-tile img,
+.photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .active-photo-button img {
   width: 100%;
   height: 100%;
@@ -361,6 +390,86 @@ h1 {
   max-width: 840px;
 }
 
+.access-directory {
+  margin-top: 42px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.access-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  transition: border-color 140ms ease, transform 120ms ease, box-shadow 140ms ease;
+}
+
+.access-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(20, 19, 17, 0.08);
+}
+
+.access-card-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: var(--color-line);
+}
+
+.access-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.access-card-cover-empty {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-line),
+    var(--color-line) 10px,
+    var(--color-paper) 10px,
+    var(--color-paper) 20px
+  );
+}
+
+.access-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 20px 22px;
+}
+
+.access-card-meta {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.access-card-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  line-height: 1.05;
+}
+
+.access-card-desc {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.access-card-cta {
+  margin-top: 4px;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+}
+
 .gallery-card {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
@@ -381,7 +490,7 @@ h1 {
   width: 100%;
   min-height: 420px;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
   background: var(--color-line);
 }
@@ -519,6 +628,49 @@ h1 {
   margin: 0;
   color: var(--color-accent);
   line-height: 1.5;
+}
+
+.login-shell {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+}
+
+.login-panel {
+  width: min(440px, 100%);
+  margin: 0 auto;
+  border-top: 1px solid var(--color-ink);
+  border-bottom: 1px solid var(--color-line);
+  padding: 34px 0;
+}
+
+.login-panel h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.login-back {
+  display: inline-block;
+  margin-top: 22px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.login-back:hover {
+  color: var(--color-accent);
+}
+
+.admin-signout {
+  border: 1px solid var(--color-line);
+  background: transparent;
+  color: var(--color-muted);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.admin-signout:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .admin-shell {
@@ -995,7 +1147,7 @@ h1 {
 .photo-button img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 

@@ -1,31 +1,35 @@
-"use client";
-
 import React from "react";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getVisibleCategories, getVisiblePortfolioPhotos } from "@/lib/portfolio";
-import { usePrototypeStore } from "@/lib/prototype-store";
+import { getFolderPhotos, getPortfolioCategories, getPortfolioSettings } from "@/lib/data/site";
 
-export default function PortfolioPage() {
-  const { state } = usePrototypeStore();
-  const categories = getVisibleCategories(state.portfolioCategories)
-    .map((category) => ({
+export const dynamic = "force-dynamic";
+
+export default async function PortfolioPage() {
+  const settings = await getPortfolioSettings();
+  const categories = (await getPortfolioCategories()).filter((category) => category.isVisible);
+
+  // Each category's cover is the first photo in its Drive folder.
+  const withCovers = await Promise.all(
+    categories.map(async (category) => ({
       category,
-      coverPhoto: getVisiblePortfolioPhotos(state.portfolioPhotos, category.id)[0] ?? null
+      cover: (await getFolderPhotos(category.driveFolderId))[0] ?? null,
     }))
-    .filter(({ coverPhoto }) => coverPhoto);
+  );
+  const shown = withCovers.filter((entry) => entry.cover);
 
   return (
     <>
       <SiteHeader />
       <main className="page-shell">
-        <p className="eyebrow">{state.portfolioSettings.eyebrow}</p>
-        <h1 className="portfolio-heading">{state.portfolioSettings.heading}</h1>
-        {categories.length > 0 ? (
+        <p className="eyebrow">{settings.eyebrow}</p>
+        <h1 className="portfolio-heading">{settings.heading}</h1>
+        {shown.length > 0 ? (
           <div className="portfolio-category-grid">
-            {categories.map(({ category, coverPhoto }) => (
+            {shown.map(({ category, cover }) => (
               <article key={category.id} className="portfolio-category-card">
                 <a href={`/portfolio/${category.slug}`} aria-label={`Open ${category.name} portfolio`}>
-                  {coverPhoto ? <img src={coverPhoto.previewUrl} alt={coverPhoto.alt} /> : null}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={cover!.previewUrl} alt={cover!.alt} />
                   <div>
                     <h2>{category.name}</h2>
                     <p>{category.description}</p>

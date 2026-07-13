@@ -1,0 +1,141 @@
+import { createClient } from "@/lib/supabase/server";
+import { listFolderImages, type DrivePhoto } from "@/lib/google/drive-service";
+
+/**
+ * Server-side reads for public site content. Settings come from Supabase;
+ * photos come from the collection's Google Drive folder (Option A).
+ */
+
+export type HomeSettings = {
+  eyebrow: string;
+  heading: string;
+  lede: string;
+  primaryCtaLabel: string;
+  primaryCtaHref: string;
+  secondaryCtaLabel: string;
+  secondaryCtaHref: string;
+  driveFolderId: string;
+};
+
+const HOME_DEFAULTS: HomeSettings = {
+  eyebrow: "HWStudio",
+  heading: "A curated gallery for every milestone.",
+  lede: "Clean editorial photography for graduations, portraits, groups, events, and headshots.",
+  primaryCtaLabel: "Explore Portfolio",
+  primaryCtaHref: "/portfolio",
+  secondaryCtaLabel: "Access Your Photos",
+  secondaryCtaHref: "/client-access",
+  driveFolderId: "",
+};
+
+export async function getHomeSettings(): Promise<HomeSettings> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("home_settings").select("*").eq("id", "main").maybeSingle();
+  if (!data) return HOME_DEFAULTS;
+  return {
+    eyebrow: data.eyebrow ?? HOME_DEFAULTS.eyebrow,
+    heading: data.heading ?? HOME_DEFAULTS.heading,
+    lede: data.lede ?? HOME_DEFAULTS.lede,
+    primaryCtaLabel: data.primary_cta_label ?? HOME_DEFAULTS.primaryCtaLabel,
+    primaryCtaHref: data.primary_cta_href ?? HOME_DEFAULTS.primaryCtaHref,
+    secondaryCtaLabel: data.secondary_cta_label ?? HOME_DEFAULTS.secondaryCtaLabel,
+    secondaryCtaHref: data.secondary_cta_href ?? HOME_DEFAULTS.secondaryCtaHref,
+    driveFolderId: data.drive_folder_id ?? "",
+  };
+}
+
+export type PortfolioSettings = { eyebrow: string; heading: string };
+
+export async function getPortfolioSettings(): Promise<PortfolioSettings> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("portfolio_settings").select("*").eq("id", "main").maybeSingle();
+  return {
+    eyebrow: data?.eyebrow ?? "Portfolio",
+    heading: data?.heading ?? "Selected work across portraits, events, and graduation stories.",
+  };
+}
+
+export type PortfolioCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  displayOrder: number;
+  isVisible: boolean;
+  driveFolderId: string;
+};
+
+export async function getPortfolioCategories(): Promise<PortfolioCategory[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("portfolio_categories").select("*").order("display_order");
+  return (data ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    description: c.description ?? "",
+    displayOrder: c.display_order ?? 1,
+    isVisible: c.is_visible ?? true,
+    driveFolderId: c.drive_folder_id ?? "",
+  }));
+}
+
+export type PublicGallery = {
+  id: string;
+  title: string;
+  slug: string;
+  eventDate: string | null;
+  description: string;
+  requiresApprovedEmail: boolean;
+  driveFolderId: string;
+};
+
+function mapPublicGallery(g: {
+  id: string;
+  title: string;
+  slug: string;
+  event_date: string | null;
+  description: string | null;
+  requires_approved_email: boolean | null;
+  drive_folder_id?: string | null;
+}): PublicGallery {
+  return {
+    id: g.id,
+    title: g.title,
+    slug: g.slug,
+    eventDate: g.event_date,
+    description: g.description ?? "",
+    requiresApprovedEmail: g.requires_approved_email ?? false,
+    driveFolderId: g.drive_folder_id ?? "",
+  };
+}
+
+/** The public "cover" for a gallery: the first photo in its folder, served as a
+ *  public teaser (no unlock needed). Returns null if the folder is empty/unset. */
+export async function getGalleryCover(folderId: string): Promise<{ previewUrl: string; alt: string } | null> {
+  const photos = await getFolderPhotos(folderId);
+  const first = photos[0];
+  return first ? { previewUrl: `/api/drive-image?fileId=${first.driveFileId}&w=1000`, alt: first.alt } : null;
+}
+
+/** Listed galleries for the client-access directory (no passcode, no folder id). */
+export async function getPublicGalleries(): Promise<PublicGallery[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("public_galleries").select("*").order("display_order");
+  return (data ?? []).map(mapPublicGallery);
+}
+
+export async function getPublicGallery(slug: string): Promise<PublicGallery | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("public_galleries").select("*").eq("slug", slug).maybeSingle();
+  return data ? mapPublicGallery(data) : null;
+}
+
+/** List a Drive folder's photos, tolerating an unset/unreadable folder. */
+export async function getFolderPhotos(folderId: string): Promise<DrivePhoto[]> {
+  if (!folderId?.trim()) return [];
+  try {
+    return await listFolderImages(folderId.trim());
+  } catch {
+    return [];
+  }
+}

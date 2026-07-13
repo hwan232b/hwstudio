@@ -1,10 +1,12 @@
 import Link from "next/link";
 import React from "react";
+import { LogoutButton } from "./LogoutButton";
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/gallery", label: "Gallery" },
   { href: "/admin/portfolio", label: "Portfolio" },
+  { href: "/admin/ai-edit", label: "AI Edit" },
   { href: "/admin/inquiries", label: "Inquiries" },
   { href: "/admin/settings", label: "Settings" }
 ];
@@ -22,6 +24,7 @@ export function AdminShell({ title, children }: { title: string; children: React
               {link.label}
             </Link>
           ))}
+          <LogoutButton />
         </nav>
       </header>
       <section className="admin-title-block">

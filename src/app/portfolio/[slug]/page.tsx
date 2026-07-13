@@ -1,23 +1,13 @@
-"use client";
-
 import React from "react";
-import { useParams } from "next/navigation";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getVisibleCategories, getVisiblePortfolioPhotos } from "@/lib/portfolio";
-import { usePrototypeStore } from "@/lib/prototype-store";
+import { getFolderPhotos, getPortfolioCategories } from "@/lib/data/site";
 
-function getSlug(params: ReturnType<typeof useParams>) {
-  const slug = params?.slug;
-  return Array.isArray(slug) ? slug[0] : slug;
-}
+export const dynamic = "force-dynamic";
 
-export default function PortfolioCategoryPage() {
-  const params = useParams();
-  const slug = getSlug(params);
-  const { state } = usePrototypeStore();
-  const category = getVisibleCategories(state.portfolioCategories).find((item) => item.slug === slug);
-  const photos = category ? getVisiblePortfolioPhotos(state.portfolioPhotos, category.id) : [];
+export default async function PortfolioCategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const category = (await getPortfolioCategories()).find((item) => item.isVisible && item.slug === slug);
 
   if (!category) {
     return (
@@ -33,6 +23,8 @@ export default function PortfolioCategoryPage() {
       </>
     );
   }
+
+  const photos = await getFolderPhotos(category.driveFolderId);
 
   return (
     <>
@@ -52,7 +44,7 @@ export default function PortfolioCategoryPage() {
           <section className="portfolio-empty">
             <p className="eyebrow">In edit</p>
             <h2>This category is being sequenced.</h2>
-            <p>Photos assigned here will appear once the portfolio edit is ready.</p>
+            <p>Photos added to this category&apos;s Drive folder will appear here.</p>
           </section>
         )}
       </main>
