@@ -3,21 +3,22 @@
 import React from "react";
 import { ContactForm, type ContactFormValues } from "@/components/ContactForm";
 import { SiteHeader } from "@/components/SiteHeader";
-import { usePrototypeStore } from "@/lib/prototype-store";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ContactPage() {
-  const { dispatch } = usePrototypeStore();
-
-  function handleSubmit(values: ContactFormValues) {
-    dispatch({
-      type: "inquiry:add",
-      inquiry: {
-        id: `inquiry-${Date.now()}`,
-        ...values,
-        status: "new",
-        createdAt: new Date().toISOString()
-      }
+  async function handleSubmit(values: ContactFormValues) {
+    const supabase = createClient();
+    const { error } = await supabase.from("contact_inquiries").insert({
+      name: values.name,
+      email: values.email,
+      message: values.message,
+      photography_type: values.photographyType,
+      preferred_date: values.preferredDate,
+      status: "new",
     });
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   return (
