@@ -29,30 +29,36 @@ const HOME_DEFAULTS: HomeSettings = {
 };
 
 export async function getHomeSettings(): Promise<HomeSettings> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("home_settings").select("*").eq("id", "main").maybeSingle();
-  if (!data) return HOME_DEFAULTS;
-  return {
-    eyebrow: data.eyebrow ?? HOME_DEFAULTS.eyebrow,
-    heading: data.heading ?? HOME_DEFAULTS.heading,
-    lede: data.lede ?? HOME_DEFAULTS.lede,
-    primaryCtaLabel: data.primary_cta_label ?? HOME_DEFAULTS.primaryCtaLabel,
-    primaryCtaHref: data.primary_cta_href ?? HOME_DEFAULTS.primaryCtaHref,
-    secondaryCtaLabel: data.secondary_cta_label ?? HOME_DEFAULTS.secondaryCtaLabel,
-    secondaryCtaHref: data.secondary_cta_href ?? HOME_DEFAULTS.secondaryCtaHref,
-    driveFolderId: data.drive_folder_id ?? "",
-  };
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from("home_settings").select("*").eq("id", "main").maybeSingle();
+    if (!data) return HOME_DEFAULTS;
+    return {
+      eyebrow: data.eyebrow ?? HOME_DEFAULTS.eyebrow,
+      heading: data.heading ?? HOME_DEFAULTS.heading,
+      lede: data.lede ?? HOME_DEFAULTS.lede,
+      primaryCtaLabel: data.primary_cta_label ?? HOME_DEFAULTS.primaryCtaLabel,
+      primaryCtaHref: data.primary_cta_href ?? HOME_DEFAULTS.primaryCtaHref,
+      secondaryCtaLabel: data.secondary_cta_label ?? HOME_DEFAULTS.secondaryCtaLabel,
+      secondaryCtaHref: data.secondary_cta_href ?? HOME_DEFAULTS.secondaryCtaHref,
+      driveFolderId: data.drive_folder_id ?? "",
+    };
+  } catch {
+    return HOME_DEFAULTS;
+  }
 }
 
 export type PortfolioSettings = { eyebrow: string; heading: string };
 
 export async function getPortfolioSettings(): Promise<PortfolioSettings> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("portfolio_settings").select("*").eq("id", "main").maybeSingle();
-  return {
-    eyebrow: data?.eyebrow ?? "Portfolio",
-    heading: data?.heading ?? "Selected work across portraits, events, and graduation stories.",
-  };
+  const fallback = { eyebrow: "Portfolio", heading: "Selected work across portraits, events, and graduation stories." };
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from("portfolio_settings").select("*").eq("id", "main").maybeSingle();
+    return { eyebrow: data?.eyebrow ?? fallback.eyebrow, heading: data?.heading ?? fallback.heading };
+  } catch {
+    return fallback;
+  }
 }
 
 export type PortfolioCategory = {
@@ -66,9 +72,14 @@ export type PortfolioCategory = {
 };
 
 export async function getPortfolioCategories(): Promise<PortfolioCategory[]> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("portfolio_categories").select("*").order("display_order");
-  return (data ?? []).map((c) => ({
+  let data: Record<string, unknown>[] | null = null;
+  try {
+    const supabase = await createClient();
+    ({ data } = await supabase.from("portfolio_categories").select("*").order("display_order"));
+  } catch {
+    return [];
+  }
+  return (data ?? []).map((c: Record<string, any>) => ({
     id: c.id,
     name: c.name,
     slug: c.slug,
@@ -119,15 +130,23 @@ export async function getGalleryCover(folderId: string): Promise<{ previewUrl: s
 
 /** Listed galleries for the client-access directory (no passcode, no folder id). */
 export async function getPublicGalleries(): Promise<PublicGallery[]> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("public_galleries").select("*").order("display_order");
-  return (data ?? []).map(mapPublicGallery);
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from("public_galleries").select("*").order("display_order");
+    return (data ?? []).map(mapPublicGallery);
+  } catch {
+    return [];
+  }
 }
 
 export async function getPublicGallery(slug: string): Promise<PublicGallery | null> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("public_galleries").select("*").eq("slug", slug).maybeSingle();
-  return data ? mapPublicGallery(data) : null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from("public_galleries").select("*").eq("slug", slug).maybeSingle();
+    return data ? mapPublicGallery(data) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** List a Drive folder's photos, tolerating an unset/unreadable folder. */
