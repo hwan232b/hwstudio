@@ -4,15 +4,23 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-// Gate every /admin page here (Node runtime — reliable on Vercel), replacing the
-// edge middleware. Unauthenticated visitors are sent to /login.
+// Gate every /admin page here (Node runtime — reliable on Vercel). If the auth
+// check can't run (e.g. Supabase env vars missing), fail closed to /login rather
+// than throwing a 500. redirect() must stay OUTSIDE the try/catch (it works by
+// throwing a control-flow signal that must not be swallowed).
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let signedIn = false;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    signedIn = Boolean(user);
+  } catch {
+    signedIn = false;
+  }
 
-  if (!user) {
+  if (!signedIn) {
     redirect("/login");
   }
 
