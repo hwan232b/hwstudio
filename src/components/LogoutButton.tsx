@@ -8,7 +8,7 @@ export function LogoutButton() {
 
   async function signOut() {
     await createClient().auth.signOut();
-    router.push("/admin/login");
+    router.push("/login");
     router.refresh();
   }
 
