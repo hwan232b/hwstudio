@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,18 +15,27 @@ export default function LoginPage() {
     setPending(true);
     setError(null);
 
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (signInError) {
-      setError("That email and password don't match. Try again.");
+      if (signInError) {
+        setError(
+          signInError.message.toLowerCase().includes("confirm")
+            ? "Your account isn't confirmed yet. In Supabase → Authentication → Users, confirm it (or re-add with Auto Confirm)."
+            : "That email and password don't match. Try again."
+        );
+        setPending(false);
+        return;
+      }
+
+      // Full navigation so the server sees the new session cookie immediately.
+      const next = new URLSearchParams(window.location.search).get("next") || "/admin";
+      window.location.assign(next);
+    } catch {
+      setError("Couldn't reach the sign-in service — the site is missing its Supabase configuration in the host.");
       setPending(false);
-      return;
     }
-
-    const next = new URLSearchParams(window.location.search).get("next") || "/admin";
-    router.push(next);
-    router.refresh();
   }
 
   return (
