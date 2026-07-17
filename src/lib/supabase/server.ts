@@ -1,10 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-// Guard against values pasted into the host with stray whitespace/newlines or
-// wrapping quotes — otherwise the Supabase URL becomes an invalid fetch target.
+// Guard against values pasted into the host with stray whitespace/newlines (even
+// in the middle of the key) or wrapping quotes — otherwise fetch throws "Invalid
+// value". The URL and a JWT anon key never contain legitimate whitespace, so it's
+// safe to strip all of it.
 function clean(value?: string): string {
-  return (value ?? "").trim().replace(/^["']+|["']+$/g, "");
+  return (value ?? "").replace(/\s+/g, "").replace(/^["']+|["']+$/g, "");
 }
 
 /**
