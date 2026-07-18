@@ -403,8 +403,7 @@ h1 {
 
 .about-photo img {
   width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
+  height: auto;
   display: block;
   background: var(--color-line);
 }
