@@ -1,12 +1,12 @@
 import React from "react";
 import { SiteHeader } from "@/components/SiteHeader";
-import { getAboutSettings, getGalleryCover } from "@/lib/data/site";
+import { getAboutPortrait, getAboutSettings } from "@/lib/data/site";
 
 export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
   const about = await getAboutSettings();
-  const portrait = about.driveFolderId ? await getGalleryCover(about.driveFolderId) : null;
+  const portrait = await getAboutPortrait(about.driveFolderId);
   const paragraphs = about.body
     .split(/\n\s*\n/)
     .map((p) => p.trim())

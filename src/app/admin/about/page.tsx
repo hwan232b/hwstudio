@@ -84,11 +84,11 @@ export default function AdminAboutPage() {
             <textarea rows={10} value={form.body} onChange={(e) => update("body", e.target.value)} />
           </label>
           <label>
-            Portrait — Google Drive folder (first photo is shown on the left)
+            Portrait — Google Drive link (a single photo, or a folder)
             <input
               value={form.driveFolder}
               onChange={(e) => update("driveFolder", e.target.value)}
-              placeholder="https://drive.google.com/drive/folders/…"
+              placeholder="Drive photo or folder link"
             />
           </label>
           <button className="dark-button" type="submit">

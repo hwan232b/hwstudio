@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { listFolderImages, type DrivePhoto } from "@/lib/google/drive-service";
+import {
+  extractGoogleDriveFileId,
+  extractGoogleDriveFolderId,
+  isGoogleDriveFolderUrl,
+} from "@/lib/google-drive";
 
 /**
  * Server-side reads for public site content. Settings come from Supabase;
@@ -170,6 +175,23 @@ export async function getPublicGallery(slug: string): Promise<PublicGallery | nu
   } catch {
     return null;
   }
+}
+
+/**
+ * Resolve an About-page portrait from whatever the admin pasted: a single Drive
+ * photo link, a Drive folder link (first image used), or a bare id.
+ */
+export async function getAboutPortrait(raw: string): Promise<{ previewUrl: string; alt: string } | null> {
+  const value = (raw || "").trim();
+  if (!value) return null;
+
+  const fileId = extractGoogleDriveFileId(value);
+  if (fileId) {
+    return { previewUrl: `/api/drive-image?fileId=${encodeURIComponent(fileId)}&w=1200`, alt: "Portrait" };
+  }
+
+  const folderId = isGoogleDriveFolderUrl(value) ? extractGoogleDriveFolderId(value) ?? value : value;
+  return getGalleryCover(folderId);
 }
 
 /** List a Drive folder's photos, tolerating an unset/unreadable folder. */
