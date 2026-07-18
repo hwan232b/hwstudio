@@ -6,6 +6,7 @@ const adminLinks = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/gallery", label: "Gallery" },
   { href: "/admin/portfolio", label: "Portfolio" },
+  { href: "/admin/about", label: "About" },
   { href: "/admin/ai-edit", label: "AI Edit" },
   { href: "/admin/inquiries", label: "Inquiries" },
   { href: "/admin/settings", label: "Settings" }
