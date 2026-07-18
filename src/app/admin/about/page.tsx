@@ -2,10 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
+import { extractGoogleDriveFolderId, isGoogleDriveFolderUrl } from "@/lib/google-drive";
 import { createClient } from "@/lib/supabase/client";
 
+function parseFolder(raw: string): string {
+  const value = raw.trim();
+  return isGoogleDriveFolderUrl(value) ? extractGoogleDriveFolderId(value) ?? value : value;
+}
+
 export default function AdminAboutPage() {
-  const [form, setForm] = useState({ eyebrow: "", heading: "", body: "" });
+  const [form, setForm] = useState({ eyebrow: "", heading: "", body: "", driveFolder: "" });
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("");
 
@@ -17,7 +23,12 @@ export default function AdminAboutPage() {
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setForm({ eyebrow: data.eyebrow ?? "", heading: data.heading ?? "", body: data.body ?? "" });
+          setForm({
+            eyebrow: data.eyebrow ?? "",
+            heading: data.heading ?? "",
+            body: data.body ?? "",
+            driveFolder: data.drive_folder_id ?? "",
+          });
         }
         setLoading(false);
       });
@@ -32,7 +43,12 @@ export default function AdminAboutPage() {
     setStatus("Saving…");
     const { error } = await createClient()
       .from("about_settings")
-      .update({ eyebrow: form.eyebrow, heading: form.heading, body: form.body })
+      .update({
+        eyebrow: form.eyebrow,
+        heading: form.heading,
+        body: form.body,
+        drive_folder_id: parseFolder(form.driveFolder),
+      })
       .eq("id", "main");
     setStatus(error ? `Couldn't save — ${error.message}` : "About page saved. Refresh the About page to see it.");
   }
@@ -67,6 +83,14 @@ export default function AdminAboutPage() {
             Body
             <textarea rows={10} value={form.body} onChange={(e) => update("body", e.target.value)} />
           </label>
+          <label>
+            Portrait — Google Drive folder (first photo is shown on the left)
+            <input
+              value={form.driveFolder}
+              onChange={(e) => update("driveFolder", e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/…"
+            />
+          </label>
           <button className="dark-button" type="submit">
             Save about page
           </button>
@@ -76,7 +100,10 @@ export default function AdminAboutPage() {
           <h2>Tips</h2>
           <p className="admin-hint">
             Write in first person about you and your photography. Leave a <strong>blank line</strong> between
-            paragraphs and they&apos;ll render as separate paragraphs on the page.
+            paragraphs. For your photo, make a Drive folder with your portrait in it, share it (Viewer) with
+            <br />
+            <strong>hwstudio@photo-site-501601.iam.gserviceaccount.com</strong>, and paste its link above — the first
+            image appears on the left.
           </p>
         </section>
       </div>

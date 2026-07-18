@@ -48,13 +48,14 @@ export async function getHomeSettings(): Promise<HomeSettings> {
   }
 }
 
-export type AboutSettings = { eyebrow: string; heading: string; body: string };
+export type AboutSettings = { eyebrow: string; heading: string; body: string; driveFolderId: string };
 
 export async function getAboutSettings(): Promise<AboutSettings> {
   const fallback: AboutSettings = {
     eyebrow: "About",
     heading: "Photography with a quiet point of view.",
     body: "",
+    driveFolderId: "",
   };
   try {
     const supabase = await createClient();
@@ -63,6 +64,7 @@ export async function getAboutSettings(): Promise<AboutSettings> {
       eyebrow: data?.eyebrow ?? fallback.eyebrow,
       heading: data?.heading ?? fallback.heading,
       body: data?.body ?? fallback.body,
+      driveFolderId: data?.drive_folder_id ?? "",
     };
   } catch {
     return fallback;
