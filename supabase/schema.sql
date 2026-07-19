@@ -173,9 +173,13 @@ drop policy if exists "public read galleries" on galleries;
 drop policy if exists "admin read galleries" on galleries;
 create policy "admin read galleries" on galleries for select using (auth.role() = 'authenticated');
 
+-- drive_folder_id is exposed so the directory can render a public cover teaser
+-- (first photo in the folder). A folder id grants no access on its own: photos
+-- are only reachable through the /api/drive-image proxy, and no public endpoint
+-- lists a folder. The passcode stays excluded.
 drop view if exists public_galleries;
 create view public_galleries as
-  select id, title, slug, event_date, description, display_order, requires_approved_email
+  select id, title, slug, event_date, description, display_order, requires_approved_email, drive_folder_id
   from galleries
   where is_listed = true and status = 'active';
 grant select on public_galleries to anon, authenticated;

@@ -156,7 +156,7 @@ export async function getGalleryCover(folderId: string): Promise<{ previewUrl: s
   return first ? { previewUrl: `/api/drive-image?fileId=${first.driveFileId}&w=1000`, alt: first.alt } : null;
 }
 
-/** Listed galleries for the client-access directory (no passcode, no folder id). */
+/** Listed galleries for the client-access directory (no passcode exposed). */
 export async function getPublicGalleries(): Promise<PublicGallery[]> {
   try {
     const supabase = await createClient();
