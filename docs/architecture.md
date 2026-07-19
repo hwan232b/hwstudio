@@ -349,10 +349,10 @@ sequenceDiagram
     PY->>PY: load outputs/style/style_model.pkl<br/>apply learned color/tone transform per photo
     PY-->>API: edited JPEGs in tmpDir
     loop each edited photo
-        API->>D: upload into afterFolder — as Hannah's own identity<br/>(OAuth, drive.file scope; service account can't write)
+        API->>D: upload into afterFolder — as Hannah's own identity<br/>(OAuth, drive.file scope — service account can't write)
     end
     API-->>UI: {ok, edited, uploaded}
-    Note over D: Hannah reviews the "after" folder;<br/>it can then serve as a gallery folder on the site
+    Note over D: Hannah reviews the "after" folder —<br/>it can then serve as a gallery folder on the site
 ```
 
 Note the deliberate split of Google identities: the **service account reads** (safe, sharable, can't touch anything not shared with it) and **OAuth writes** (only as Hannah, only files the app created — `drive.file` scope).
