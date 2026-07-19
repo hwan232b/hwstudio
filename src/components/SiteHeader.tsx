@@ -20,6 +20,9 @@ export function SiteHeader() {
             {link.label}
           </Link>
         ))}
+        <Link href="/login" className="site-nav-login">
+          Login
+        </Link>
       </nav>
     </header>
   );

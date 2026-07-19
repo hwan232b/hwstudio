@@ -177,6 +177,11 @@ h1 {
   transform: translateY(1px);
 }
 
+.site-nav .site-nav-login {
+  border-left: 1px solid var(--color-line);
+  padding-left: 18px;
+}
+
 .home-shell {
   padding-top: 16px;
 }
