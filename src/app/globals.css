@@ -446,7 +446,7 @@ h1 {
 .access-card-cover {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   background: var(--color-line);
 }
