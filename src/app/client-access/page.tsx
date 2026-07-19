@@ -16,7 +16,7 @@ export default async function ClientAccessPage() {
       <main className="page-shell">
         <p className="eyebrow">Client Access</p>
         <h1 className="portfolio-heading">Find your gallery.</h1>
-        <p className="lede">Open your private gallery with the passcode your photographer shared with you.</p>
+        <p className="lede">Open your private gallery with the passcode shared with you.</p>
         {cards.length > 0 ? (
           <div className="access-directory">
             {cards.map(({ gallery, cover }) => (
