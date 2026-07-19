@@ -814,6 +814,12 @@ h1 {
   gap: 10px;
 }
 
+.admin-gallery-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .selected-button {
   border-color: var(--color-accent);
   color: var(--color-accent);

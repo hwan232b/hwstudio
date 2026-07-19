@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
 import { extractGoogleDriveFolderId, isGoogleDriveFolderUrl } from "@/lib/google-drive";
+import { moveItemById } from "@/lib/reorder";
 import { createClient } from "@/lib/supabase/client";
 
 type Gallery = {
@@ -176,6 +177,7 @@ export default function AdminGalleryPage() {
   }, [selectedId, loadEmails]);
 
   const selected = galleries.find((g) => g.id === selectedId) ?? null;
+  const sortedGalleries = [...galleries].sort((a, b) => a.display_order - b.display_order);
 
   async function createGallery(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -226,6 +228,34 @@ export default function AdminGalleryPage() {
     setSelectedId(rows[0]?.id ?? null);
     setStatus("Gallery deleted.");
   }
+
+  const move = useCallback(
+    async (id: string, direction: "up" | "down") => {
+      const current = galleries.map((g) => ({ id: g.id, displayOrder: g.display_order }));
+      const next = moveItemById(current, id, direction);
+      const changed = next.filter((item) => {
+        const before = current.find((c) => c.id === item.id);
+        return before && before.displayOrder !== item.displayOrder;
+      });
+      if (changed.length === 0) return;
+      const supabase = createClient();
+      await Promise.all(
+        changed.map((item) =>
+          supabase.from("galleries").update({ display_order: item.displayOrder }).eq("id", item.id)
+        )
+      );
+      setGalleries((prev) =>
+        [...prev]
+          .map((g) => {
+            const updated = next.find((n) => n.id === g.id);
+            return updated ? { ...g, display_order: updated.displayOrder } : g;
+          })
+          .sort((a, b) => a.display_order - b.display_order)
+      );
+      setStatus("Gallery order updated.");
+    },
+    [galleries]
+  );
 
   async function addEmail(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -285,15 +315,36 @@ export default function AdminGalleryPage() {
             <h2>Your galleries</h2>
             {galleries.length > 0 ? (
               <div className="admin-gallery-selector">
-                {galleries.map((gallery) => (
-                  <button
-                    key={gallery.id}
-                    type="button"
-                    className={`text-button${gallery.id === selectedId ? " selected-button" : ""}`}
-                    onClick={() => setSelectedId(gallery.id)}
-                  >
-                    {gallery.title}
-                  </button>
+                {sortedGalleries.map((gallery, index) => (
+                  <div key={gallery.id} className="admin-gallery-row">
+                    <button
+                      type="button"
+                      className={`text-button${gallery.id === selectedId ? " selected-button" : ""}`}
+                      onClick={() => setSelectedId(gallery.id)}
+                    >
+                      {gallery.title}
+                    </button>
+                    <div className="admin-photo-actions">
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => move(gallery.id, "up")}
+                        disabled={index === 0}
+                        aria-label={`Move ${gallery.title} up`}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => move(gallery.id, "down")}
+                        disabled={index === sortedGalleries.length - 1}
+                        aria-label={`Move ${gallery.title} down`}
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
