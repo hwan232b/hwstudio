@@ -10,6 +10,8 @@ export default function AdminAiEditPage() {
   const [afterFolder, setAfterFolder] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [previews, setPreviews] = useState<{ name: string; before: string | null; after: string }[]>([]);
+  const [truncated, setTruncated] = useState(false);
 
   useEffect(() => {
     fetch("/api/oauth/status")
@@ -27,6 +29,8 @@ export default function AdminAiEditPage() {
   async function runEdit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
+    setPreviews([]);
+    setTruncated(false);
     setStatus("Editing your photos… this can take a few minutes for a large folder.");
     try {
       const response = await fetch("/api/ai-edit", {
@@ -39,6 +43,8 @@ export default function AdminAiEditPage() {
         setStatus(data.error ?? "Something went wrong.");
       } else {
         setStatus(`Done — edited ${data.edited} photos and added them to your after folder.`);
+        setPreviews(data.previews ?? []);
+        setTruncated(Boolean(data.truncated));
       }
     } catch {
       setStatus("Couldn't reach the editor. Make sure the site is running on your Mac.");
@@ -111,6 +117,39 @@ export default function AdminAiEditPage() {
           </p>
         </section>
       </div>
+
+      {previews.length > 0 ? (
+        <section className="admin-panel aiedit-review">
+          <h2>Before &amp; after</h2>
+          <p className="admin-hint">
+            Your original on the left, edited in your style on the right. Every photo is already saved in your after
+            folder{truncated ? "; the first 24 are shown here." : "."}
+          </p>
+          <div className="aiedit-grid">
+            {previews.map((pair) => (
+              <figure className="aiedit-pair" key={pair.name}>
+                <div className="aiedit-shots">
+                  <span className="aiedit-shot">
+                    <em>Before</em>
+                    {pair.before ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={pair.before} alt={`${pair.name} before`} loading="lazy" />
+                    ) : (
+                      <span className="aiedit-missing" aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="aiedit-shot">
+                    <em>After</em>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={pair.after} alt={`${pair.name} after`} loading="lazy" />
+                  </span>
+                </div>
+                <figcaption>{pair.name}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </AdminShell>
   );
 }
