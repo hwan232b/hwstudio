@@ -14,20 +14,6 @@ import { createClient } from "@/lib/supabase/server";
 const PREVIEW_MAX = 24;
 const EDIT_TIMEOUT_MS = 1000 * 60 * 20;
 
-// The ten CIELAB edit dials, in the order the Python descriptors module produces.
-const DIAL_KEYS = [
-  "exposure",
-  "contrast",
-  "warmth",
-  "tint",
-  "saturation",
-  "vibrance_slope",
-  "shadow_lift",
-  "highlight_roll",
-  "midtone_shift",
-  "local_residual",
-] as const;
-
 type Dials = Record<string, number>;
 
 function stem(name: string): string {
@@ -37,15 +23,6 @@ function stem(name: string): string {
 function parseFolder(raw: string): string {
   const value = (raw || "").trim();
   return isGoogleDriveFolderUrl(value) ? extractGoogleDriveFolderId(value) ?? value : value;
-}
-
-function averageDials(all: Dials[]): Dials | null {
-  if (all.length === 0) return null;
-  const avg: Dials = {};
-  for (const key of DIAL_KEYS) {
-    avg[key] = all.reduce((sum, d) => sum + (d[key] ?? 0), 0) / all.length;
-  }
-  return avg;
 }
 
 // Run the local Python editor, streaming its per-photo progress lines out via
@@ -201,7 +178,6 @@ export async function POST(request: Request) {
           uploaded,
           previews,
           truncated: files.length > PREVIEW_MAX,
-          shootAverage: averageDials(Object.values(dialsByStem)),
         });
       } catch (error) {
         send({ type: "error", error: String((error as Error).message).slice(0, 300) });

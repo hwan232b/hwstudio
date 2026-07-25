@@ -120,7 +120,6 @@ export default function AdminAiEditPage() {
   const [progress, setProgress] = useState<Progress | null>(null);
   const [previews, setPreviews] = useState<Pair[]>([]);
   const [truncated, setTruncated] = useState(false);
-  const [shootAverage, setShootAverage] = useState<Dials | null>(null);
   const [active, setActive] = useState<Pair | null>(null);
   const [view, setView] = useState<"slider" | "split">("slider");
 
@@ -145,10 +144,10 @@ export default function AdminAiEditPage() {
   }, [active]);
 
   // Per-dial scale for the diverging bars: the largest move seen in this shoot,
-  // so bars are comparable within the run without inventing fixed ranges.
+  // so bars are comparable across photos without inventing fixed ranges.
   const scale: Dials = {};
   for (const d of DIALS) {
-    let max = Math.abs(shootAverage?.[d.key] ?? 0);
+    let max = 0;
     for (const p of previews) max = Math.max(max, Math.abs(p.dials?.[d.key] ?? 0));
     scale[d.key] = max || 1;
   }
@@ -165,7 +164,6 @@ export default function AdminAiEditPage() {
     setBusy(true);
     setPreviews([]);
     setTruncated(false);
-    setShootAverage(null);
     setStatus("");
     setProgress({ stage: "download", done: 0, total: 0 });
     try {
@@ -202,7 +200,6 @@ export default function AdminAiEditPage() {
           } else if (ev.type === "done") {
             setPreviews(ev.previews ?? []);
             setTruncated(Boolean(ev.truncated));
-            setShootAverage(ev.shootAverage ?? null);
             setStatus(`Done — edited ${ev.edited} photos and added them to your after folder.`);
           } else if (ev.type === "error") {
             setStatus(ev.error ?? "Editing failed.");
@@ -293,17 +290,6 @@ export default function AdminAiEditPage() {
           </p>
         </section>
       </div>
-
-      {shootAverage ? (
-        <section className="admin-panel aiedit-review">
-          <h2>What your style did to this shoot</h2>
-          <p className="admin-hint">
-            The average edit across every photo, in the same ten CIELAB dials your signature is built from. Click any
-            photo below to see its own breakdown.
-          </p>
-          <DialRows dials={shootAverage} scale={scale} />
-        </section>
-      ) : null}
 
       {previews.length > 0 ? (
         <section className="admin-panel aiedit-review">
