@@ -975,7 +975,7 @@ h1 {
   inset: 0;
   z-index: 50;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   padding: clamp(16px, 4vw, 48px);
   background: rgba(21, 20, 18, 0.55);
@@ -983,7 +983,10 @@ h1 {
 }
 
 .aiedit-modal-inner {
-  width: min(960px, 100%);
+  width: min(1120px, 100%);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   box-shadow: 0 30px 70px -40px rgba(0, 0, 0, 0.6);
@@ -996,6 +999,7 @@ h1 {
   align-items: baseline;
   gap: 20px;
   margin-bottom: 16px;
+  flex: 0 0 auto;
 }
 
 .aiedit-modal-head h2 {
@@ -1003,29 +1007,30 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+/* The media sizes to the body height so a portrait photo fills the left
+   column; the dials scroll alongside instead of stretching the row tall. */
 .aiedit-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 1fr);
+  grid-template-columns: minmax(0, auto) minmax(240px, 340px);
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .aiedit-modal-shots {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.aiedit-modal-shots .aiedit-shot {
-  aspect-ratio: auto;
-  background: transparent;
-}
-
-.aiedit-modal-shots .aiedit-shot img {
-  width: 100%;
-  height: auto;
-  max-height: 62vh;
-  object-fit: contain;
+.aiedit-modal-dials {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .aiedit-modal-dials .dial-list {
@@ -1045,32 +1050,43 @@ h1 {
 }
 
 .aiedit-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  height: 100%;
+  display: flex;
   gap: 10px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .aiedit-split .aiedit-shot {
+  height: 100%;
   aspect-ratio: auto;
   background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .aiedit-split .aiedit-shot img {
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
-  max-height: 62vh;
   object-fit: contain;
 }
 
 /* ---- draggable before/after wipe ---- */
 .ba-slider {
   position: relative;
-  width: 100%;
+  height: 100%;
+  max-width: 100%;
   overflow: hidden;
   background: var(--color-line);
   cursor: ew-resize;
   user-select: none;
   touch-action: none;
+  line-height: 0;
 }
 
 .ba-slider:focus-visible {
@@ -1080,8 +1096,10 @@ h1 {
 
 .ba-base {
   display: block;
-  width: 100%;
-  height: auto;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .ba-top {
@@ -1094,7 +1112,7 @@ h1 {
 .ba-top .aiedit-missing {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -1193,8 +1211,33 @@ h1 {
 }
 
 @media (max-width: 720px) {
+  /* Stack, and size the media by width again (no fixed body height). */
+  .aiedit-modal-inner {
+    max-height: none;
+  }
   .aiedit-modal-body {
     grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .aiedit-modal-dials {
+    overflow-y: visible;
+  }
+  .ba-slider {
+    height: auto;
+    width: 100%;
+  }
+  .ba-base {
+    height: auto;
+    width: 100%;
+  }
+  .aiedit-split .aiedit-shot,
+  .aiedit-split {
+    height: auto;
+  }
+  .aiedit-split .aiedit-shot img {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
   }
 }
 
