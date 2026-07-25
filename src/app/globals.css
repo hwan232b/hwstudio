@@ -1032,6 +1032,166 @@ h1 {
   margin-top: 0;
 }
 
+.aiedit-modal-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.aiedit-toggle {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.aiedit-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.aiedit-split .aiedit-shot {
+  aspect-ratio: auto;
+  background: transparent;
+}
+
+.aiedit-split .aiedit-shot img {
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  object-fit: contain;
+}
+
+/* ---- draggable before/after wipe ---- */
+.ba-slider {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-line);
+  cursor: ew-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.ba-slider:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.ba-base {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ba-top {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ba-top img,
+.ba-top .aiedit-missing {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ba-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px rgba(21, 20, 18, 0.35);
+  pointer-events: none;
+}
+
+.ba-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px rgba(21, 20, 18, 0.35);
+}
+
+.ba-tag {
+  position: absolute;
+  top: 8px;
+  z-index: 1;
+  padding: 2px 8px;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-surface);
+  background: rgba(21, 21, 21, 0.62);
+  pointer-events: none;
+}
+
+.ba-tag-before {
+  left: 8px;
+}
+
+.ba-tag-after {
+  right: 8px;
+}
+
+/* ---- live progress ---- */
+.aiedit-progress {
+  margin-bottom: 22px;
+  display: grid;
+  gap: 8px;
+}
+
+.aiedit-progress-label {
+  font-size: 0.84rem;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.aiedit-progress-track {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  background: var(--color-line);
+}
+
+.aiedit-progress-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  background: var(--color-accent);
+  transition: width 200ms ease;
+}
+
+.aiedit-progress-fill.is-indeterminate {
+  width: 35%;
+  animation: aiedit-indeterminate 1.15s ease-in-out infinite;
+}
+
+@keyframes aiedit-indeterminate {
+  0% { left: -35%; }
+  100% { left: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aiedit-progress-fill.is-indeterminate {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.5;
+  }
+}
+
 @media (max-width: 720px) {
   .aiedit-modal-body {
     grid-template-columns: 1fr;

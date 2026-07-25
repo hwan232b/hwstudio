@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AdminShell } from "@/components/AdminShell";
 
 type Dials = Record<string, number>;
 type Pair = { name: string; before: string | null; after: string; dials: Dials | null };
+type Progress = { stage: "download" | "edit" | "upload"; done: number; total: number };
 
 // The ten CIELAB dials, with plain-English labels and what a +/- move means.
 const DIALS: { key: string; label: string; hint: string; pos: string; neg: string }[] = [
@@ -32,9 +33,11 @@ function DialRows({ dials, scale }: { dials: Dials; scale: Dials }) {
           <li className="dial-row" key={d.key}>
             <div className="dial-head">
               <span className="dial-label">{d.label}</span>
-              <span className="dial-value" data-sign={value >= 0 ? "pos" : "neg"}>
-                {value >= 0 ? "+" : ""}
-                {value.toFixed(2)}
+              <span className="dial-value">
+                <span>
+                  {value >= 0 ? "+" : ""}
+                  {value.toFixed(2)}
+                </span>
                 <em>{direction}</em>
               </span>
             </div>
@@ -54,6 +57,59 @@ function DialRows({ dials, scale }: { dials: Dials; scale: Dials }) {
   );
 }
 
+// Draggable wipe: "before" on the left, "after" on the right, handle reveals.
+function BeforeAfterSlider({ pair }: { pair: Pair }) {
+  const [pos, setPos] = useState(50);
+  const ref = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const setFromX = (clientX: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos(Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100)));
+  };
+
+  return (
+    <div
+      className="ba-slider"
+      ref={ref}
+      role="slider"
+      aria-label={`Drag to compare before and after for ${pair.name}`}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(pos)}
+      tabIndex={0}
+      onPointerDown={(e) => {
+        dragging.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setFromX(e.clientX);
+      }}
+      onPointerMove={(e) => dragging.current && setFromX(e.clientX)}
+      onPointerUp={() => (dragging.current = false)}
+      onPointerCancel={() => (dragging.current = false)}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowLeft") setPos((p) => Math.max(0, p - 2));
+        if (e.key === "ArrowRight") setPos((p) => Math.min(100, p + 2));
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="ba-base" src={pair.after} alt={`${pair.name} after`} draggable={false} />
+      <div className="ba-top" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
+        {pair.before ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={pair.before} alt={`${pair.name} before`} draggable={false} />
+        ) : (
+          <span className="aiedit-missing" aria-hidden="true" />
+        )}
+      </div>
+      <span className="ba-handle" style={{ left: `${pos}%` }} aria-hidden="true" />
+      <span className="ba-tag ba-tag-before">Before</span>
+      <span className="ba-tag ba-tag-after">After</span>
+    </div>
+  );
+}
+
 export default function AdminAiEditPage() {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [configured, setConfigured] = useState(true);
@@ -61,10 +117,12 @@ export default function AdminAiEditPage() {
   const [afterFolder, setAfterFolder] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<Progress | null>(null);
   const [previews, setPreviews] = useState<Pair[]>([]);
   const [truncated, setTruncated] = useState(false);
   const [shootAverage, setShootAverage] = useState<Dials | null>(null);
   const [active, setActive] = useState<Pair | null>(null);
+  const [view, setView] = useState<"slider" | "split">("slider");
 
   useEffect(() => {
     fetch("/api/oauth/status")
@@ -95,32 +153,67 @@ export default function AdminAiEditPage() {
     scale[d.key] = max || 1;
   }
 
+  const progressLabel = (p: Progress) =>
+    p.stage === "download"
+      ? "Downloading photos from Drive…"
+      : p.stage === "edit"
+        ? `Editing ${p.done} / ${p.total}…`
+        : `Uploading ${p.done} / ${p.total}…`;
+
   async function runEdit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setPreviews([]);
     setTruncated(false);
     setShootAverage(null);
-    setStatus("Editing your photos… this can take a few minutes for a large folder.");
+    setStatus("");
+    setProgress({ stage: "download", done: 0, total: 0 });
     try {
       const response = await fetch("/api/ai-edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ beforeFolder, afterFolder }),
       });
-      const data = await response.json();
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
+        const data = await response.json().catch(() => ({}));
         setStatus(data.error ?? "Something went wrong.");
-      } else {
-        setStatus(`Done — edited ${data.edited} photos and added them to your after folder.`);
-        setPreviews(data.previews ?? []);
-        setTruncated(Boolean(data.truncated));
-        setShootAverage(data.shootAverage ?? null);
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const ev = JSON.parse(line);
+          if (ev.type === "phase" && ev.phase === "download") {
+            setProgress({ stage: "download", done: 0, total: 0 });
+          } else if (ev.type === "phase" && ev.phase === "upload") {
+            setProgress({ stage: "upload", done: 0, total: ev.total ?? 0 });
+          } else if (ev.type === "progress") {
+            setProgress({ stage: ev.stage, done: ev.done, total: ev.total });
+          } else if (ev.type === "done") {
+            setPreviews(ev.previews ?? []);
+            setTruncated(Boolean(ev.truncated));
+            setShootAverage(ev.shootAverage ?? null);
+            setStatus(`Done — edited ${ev.edited} photos and added them to your after folder.`);
+          } else if (ev.type === "error") {
+            setStatus(ev.error ?? "Editing failed.");
+          }
+        }
       }
     } catch {
       setStatus("Couldn't reach the editor. Make sure the site is running on your Mac.");
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -130,6 +223,18 @@ export default function AdminAiEditPage() {
         <p className="admin-status" role="status">
           {status}
         </p>
+      ) : null}
+
+      {busy && progress ? (
+        <div className="aiedit-progress" role="status" aria-live="polite">
+          <span className="aiedit-progress-label">{progressLabel(progress)}</span>
+          <div className="aiedit-progress-track">
+            <span
+              className={`aiedit-progress-fill${progress.total ? "" : " is-indeterminate"}`}
+              style={progress.total ? { width: `${Math.round((progress.done / progress.total) * 100)}%` } : undefined}
+            />
+          </div>
+        </div>
       ) : null}
 
       <div className="admin-editor-grid">
@@ -212,7 +317,7 @@ export default function AdminAiEditPage() {
           </div>
           <p className="admin-hint">
             Your original on the left, edited on the right. Every photo is already saved in your after folder
-            {truncated ? "; the first 24 are shown here." : "."} Click a photo to see how each dial moved.
+            {truncated ? "; the first 24 are shown here." : "."} Click a photo to compare it and see how each dial moved.
           </p>
           <div className="aiedit-grid">
             {previews.map((pair) => (
@@ -248,30 +353,62 @@ export default function AdminAiEditPage() {
       ) : null}
 
       {active ? (
-        <div className="aiedit-modal" role="dialog" aria-modal="true" aria-label={`${active.name} edit breakdown`} onClick={() => setActive(null)}>
+        <div
+          className="aiedit-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${active.name} edit breakdown`}
+          onClick={() => setActive(null)}
+        >
           <div className="aiedit-modal-inner" onClick={(e) => e.stopPropagation()}>
             <div className="aiedit-modal-head">
               <h2>{active.name}</h2>
-              <button type="button" className="text-button" onClick={() => setActive(null)}>
-                Close
-              </button>
+              <div className="aiedit-modal-controls">
+                <div className="aiedit-toggle" role="group" aria-label="Comparison view">
+                  <button
+                    type="button"
+                    className={`text-button${view === "slider" ? " selected-button" : ""}`}
+                    aria-pressed={view === "slider"}
+                    onClick={() => setView("slider")}
+                  >
+                    Slider
+                  </button>
+                  <button
+                    type="button"
+                    className={`text-button${view === "split" ? " selected-button" : ""}`}
+                    aria-pressed={view === "split"}
+                    onClick={() => setView("split")}
+                  >
+                    Side by side
+                  </button>
+                </div>
+                <button type="button" className="text-button" onClick={() => setActive(null)}>
+                  Close
+                </button>
+              </div>
             </div>
             <div className="aiedit-modal-body">
               <div className="aiedit-modal-shots">
-                <span className="aiedit-shot">
-                  <em>Before</em>
-                  {active.before ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={active.before} alt={`${active.name} before`} />
-                  ) : (
-                    <span className="aiedit-missing" aria-hidden="true" />
-                  )}
-                </span>
-                <span className="aiedit-shot">
-                  <em>After</em>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={active.after} alt={`${active.name} after`} />
-                </span>
+                {view === "slider" ? (
+                  <BeforeAfterSlider pair={active} />
+                ) : (
+                  <div className="aiedit-split">
+                    <span className="aiedit-shot">
+                      <em>Before</em>
+                      {active.before ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={active.before} alt={`${active.name} before`} />
+                      ) : (
+                        <span className="aiedit-missing" aria-hidden="true" />
+                      )}
+                    </span>
+                    <span className="aiedit-shot">
+                      <em>After</em>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={active.after} alt={`${active.name} after`} />
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="aiedit-modal-dials">
                 {active.dials ? (
