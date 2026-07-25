@@ -16,8 +16,33 @@ const execFileAsync = promisify(execFile);
 // still land in the Drive folder; we just don't inline hundreds of thumbnails.
 const PREVIEW_MAX = 24;
 
+// The ten CIELAB edit dials, in the order the Python descriptors module produces.
+const DIAL_KEYS = [
+  "exposure",
+  "contrast",
+  "warmth",
+  "tint",
+  "saturation",
+  "vibrance_slope",
+  "shadow_lift",
+  "highlight_roll",
+  "midtone_shift",
+  "local_residual",
+] as const;
+
+type Dials = Record<string, number>;
+
 function stem(name: string): string {
   return name.replace(/\.[^.]+$/, "").toLowerCase();
+}
+
+function averageDials(all: Dials[]): Dials | null {
+  if (all.length === 0) return null;
+  const avg: Dials = {};
+  for (const key of DIAL_KEYS) {
+    avg[key] = all.reduce((sum, d) => sum + (d[key] ?? 0), 0) / all.length;
+  }
+  return avg;
 }
 
 function parseFolder(raw: string): string {
@@ -52,12 +77,14 @@ export async function POST(request: Request) {
   const cmDir =
     process.env.CONSISTENCY_MIRROR_DIR || "/Users/hannahwang/Documents/Photo Site/consistency-mirror";
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "aiedit-"));
+  const dialsPath = path.join(outDir, "_dials.json");
 
-  // 1) Run the local Python model: download the before folder + write edited files.
+  // 1) Run the local Python model: download the before folder, write edited files,
+  //    and measure the ten CIELAB dials (raw vs. edited) for each photo.
   try {
     await execFileAsync(
       path.join(cmDir, ".venv/bin/python"),
-      ["edit_folder.py", "--drive", beforeId, "--out", outDir],
+      ["edit_folder.py", "--drive", beforeId, "--out", outDir, "--dials-json", dialsPath],
       { cwd: cmDir, maxBuffer: 64 * 1024 * 1024, timeout: 1000 * 60 * 20 }
     );
   } catch (error) {
@@ -86,6 +113,15 @@ export async function POST(request: Request) {
   const beforePhotos = await listFolderImages(beforeId).catch(() => []);
   const beforeByStem = new Map(beforePhotos.map((p) => [p.alt.toLowerCase(), p.driveFileId]));
 
+  // Per-photo dials, keyed by filename stem (lowercased to match).
+  let dialsByStem: Record<string, Dials> = {};
+  try {
+    const raw = JSON.parse(fs.readFileSync(dialsPath, "utf8")) as Record<string, Dials>;
+    dialsByStem = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k.toLowerCase(), v]));
+  } catch {
+    // Dials are a nice-to-have; the edit still succeeded without them.
+  }
+
   const previewNames = [...files].sort((a, b) => a.localeCompare(b)).slice(0, PREVIEW_MAX);
   const previews = [];
   for (const name of previewNames) {
@@ -100,13 +136,17 @@ export async function POST(request: Request) {
     } catch {
       // Skip a thumbnail we can't render; the file still uploaded fine.
     }
-    const beforeFileId = beforeByStem.get(stem(name));
+    const key = stem(name);
+    const beforeFileId = beforeByStem.get(key);
     previews.push({
       name,
       before: beforeFileId ? `/api/drive-image?fileId=${encodeURIComponent(beforeFileId)}&w=760` : null,
       after,
+      dials: dialsByStem[key] ?? null,
     });
   }
+
+  const shootAverage = averageDials(Object.values(dialsByStem));
 
   fs.rmSync(outDir, { recursive: true, force: true });
   return NextResponse.json({
@@ -115,5 +155,6 @@ export async function POST(request: Request) {
     uploaded,
     previews,
     truncated: files.length > PREVIEW_MAX,
+    shootAverage,
   });
 }
